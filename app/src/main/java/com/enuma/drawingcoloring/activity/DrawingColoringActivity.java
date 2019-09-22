@@ -1,5 +1,6 @@
 package com.enuma.drawingcoloring.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -451,7 +452,7 @@ public class DrawingColoringActivity extends BaseActivity {
                     Calendar calendar = Calendar.getInstance();
                     String saveFileName = mSavePath + Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".jpg";
 
-                    if (Util.saveImageFileFromView(mLayoutDrawing, saveFileName, null, 70) == true) {
+                    if (Util.saveImageFileFromView(mLayoutDrawing, saveFileName, null, 70)) {
                         processSaveAmount();
                         setNeedSave(false);
                         startSaveAnimation(saveFileName);
@@ -503,12 +504,14 @@ public class DrawingColoringActivity extends BaseActivity {
     };
 
     private View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
+        @SuppressLint("DefaultLocale")
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            if (mVDrawingColoring.isInit() == false) {
+            if (!mVDrawingColoring.isInit()) {
                 Log.i("not ready");
                 return false;
             }
+
 
             float x = 0;
             float y = 0;
@@ -543,12 +546,13 @@ public class DrawingColoringActivity extends BaseActivity {
                     mTempRect.right = (int) (mTempRect.right / mScale);
                     mTempRect.bottom = (int) (mTempRect.bottom / mScale);
 
-                    if (mTempRect.contains((int) x, (int) y) == true) {
+                    if (mTempRect.contains((int) x, (int) y)) {
                         setPenColor(i, true);
                         break;
                     }
                 }
 
+                // just checks if it's inside of the coloring box
                 mVDrawingColoring.getGlobalVisibleRect(mTempRect);
                 mTempRect.left = (int) (mTempRect.left / mScale);
                 mTempRect.top = (int) (mTempRect.top / mScale);
@@ -561,13 +565,13 @@ public class DrawingColoringActivity extends BaseActivity {
                 } else {
                     final float TOUCH_TOLERANCE = 4;
 
-                    if (mTempRect.contains((int) x, (int) y) == true) {
+                    if (mTempRect.contains((int) x, (int) y)) {
                         if (Math.abs(x - mBeforeTouchPosX) < TOUCH_TOLERANCE &&
                                 Math.abs(y - mBeforeTouchPosY) < TOUCH_TOLERANCE) {
                             stopChalkingSound();
 
                         } else {
-                            if (mbSoundingChalk == false) {
+                            if (!mbSoundingChalk) {
                                 startChalkingSound();
 
                             }
@@ -582,6 +586,7 @@ public class DrawingColoringActivity extends BaseActivity {
 //                }
 
 
+                // this must be where the important stuff happens...
                 mVDrawingColoring.doTouchEvent(event.getAction() & MotionEvent.ACTION_MASK, x - mTempRect.left, y - mTempRect.top);
             }
 
@@ -605,7 +610,7 @@ public class DrawingColoringActivity extends BaseActivity {
             String[] list = Util.getFileListFromAssets(mThisActivity, Const.COLORING_IMAGE_PATH_FROM_ASSETS);
             if (list != null) {
                 for (int i = 0; i < list.length; ++i) {
-                    if (list[i].contains("_thumb") == true) {
+                    if (list[i].contains("_thumb")) {
                         mThumbnailsColoring.add(list[i]);
 
                     } else {

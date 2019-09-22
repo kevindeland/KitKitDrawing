@@ -1,5 +1,6 @@
 package com.enuma.drawingcoloring.view;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -18,6 +19,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.enuma.drawingcoloring.R;
+import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
 import com.enuma.drawingcoloring.utility.Util;
 
@@ -89,7 +91,9 @@ public class ViewDrawingColoring extends View {
     private MODE mMode = MODE.DRAWING;
     private int mCurrentColor;
     private int mTouchId;
+    private float mTouchOriginX, mTouchOriginY;
     private float mTouchPosX, mTouchPosY;
+    private float mTouchRevX, mTouchRevY;
 
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -202,9 +206,16 @@ public class ViewDrawingColoring extends View {
 
     ////////////////////////////////////////////////////////////////////////////////
 
+
     private void doTouchDown(float x, float y) {
         mTouchPosX = x;
         mTouchPosY = y;
+
+        mTouchOriginX = x;
+        mTouchOriginY = y;
+
+        mTouchRevX =x;
+        mTouchRevY = y;
 
 //        if (mMode == MODE.DRAWING) {
 //            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
@@ -221,14 +232,19 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private void doTouchMove(float x, float y) {
         if (mTouchPosX == Float.MIN_VALUE || mTouchPosY == Float.MIN_VALUE) {
             return;
         }
 
-        float dx = Math.abs(x - mTouchPosX);
-        float dy = Math.abs(y - mTouchPosY);
-        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+        float vdx = Math.abs(x - mTouchPosX); // how much x has changed since last event
+        float vdy = Math.abs(y - mTouchPosY); // how much y has changed since last event
+
+        float dx = x - mTouchPosX; // need these for symmetry
+        float dy = y - mTouchPosY;
+
+        if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
 
 //            if (mMode == MODE.DRAWING) {
 //                drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
@@ -238,10 +254,23 @@ public class ViewDrawingColoring extends View {
 //
 //            }
 
+            Log.i("WALK_LINE", String.format("Drawing from [%d, %d] to [%d, %d]",
+                    (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
             drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+
+            int revXEnd = (int) (mTouchRevX - dx);
+            int revYEnd = (int) (mTouchRevY - dy);
+            Log.i("WALK_LINE", String.format("Drawing from [%d, %d] to [%d, %d]",
+                    (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd));
+            drawLineWithBrush(mCanvasBuffer, (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd);
 
             mTouchPosX = x;
             mTouchPosY = y;
+
+            mTouchRevX = mTouchRevX - dx;
+            mTouchRevY = mTouchRevY - dy;
+
+            // mTouchRevX is something to do with dx and dy
         }
     }
 
@@ -283,19 +312,27 @@ public class ViewDrawingColoring extends View {
 
     /**
      * 크레용 질감의 Line Drawing
+     *
+     * draw line between [startX, startY], and [endX, endY]
      * @param canvas
      * @param startX
      * @param startY
      * @param endX
      * @param endY
      */
+    @SuppressLint("DefaultLocale")
     private void drawLineWithBrush(Canvas canvas, int startX, int startY, int endX, int endY) {
+        // MAGIC here is where it is!!!!
         int distance = (int) Util.getDistanceBetween2Point(startX, startY, endX, endY);
         double angle = Util.getRadianAngleBetween2Point(startX, startY, endX, endY);
+        double angleReverse = Util.getRadianAngleBetween2Point(endX, endY, startX, startY);
+
+        Log.i("MAGIC", String.format("distance=%d, angle=%f", distance, angle));
 
         int halfBrushWidth = BRUSH_POINT_WIDTH / 2;
         int halfBrushHeight = BRUSH_POINT_WIDTH / 2;
         int x, y;
+        int xRev, yRev;
 
         int offset = halfBrushWidth / 2;
 
@@ -303,6 +340,13 @@ public class ViewDrawingColoring extends View {
             x = (int) (startX + (Math.sin(angle) * i) - halfBrushWidth);
             y = (int) (startY + (Math.cos(angle) * i) - halfBrushHeight);
             canvas.drawBitmap(getBrushPointBitmap(), x, y, mPaintDrawing);
+
+            // try this :)
+            // weird almost perpendicular thing
+            /* xRev = (int) (startX + (Math.sin(angleReverse) * i) - halfBrushWidth);
+            yRev = (int) (startY + (Math.cos(angleReverse) * i) - halfBrushHeight);
+            canvas.drawBitmap(getBrushPointBitmap(), xRev, yRev, mPaintDrawing); */
+
         }
     }
 
@@ -381,7 +425,7 @@ public class ViewDrawingColoring extends View {
 
     public void doTouchEvent(int action, float x, float y) {
         boolean isInvalidate = false;
-        if (mRect.contains((int) x, (int) y) == true || mRect.contains((int) mTouchPosX, (int) mTouchPosY) == true) {
+        if (mRect.contains((int) x, (int) y) || mRect.contains((int) mTouchPosX, (int) mTouchPosY)) {
             isInvalidate = true;
         }
 
