@@ -6,15 +6,15 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/crayon_box"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/crayon_box_round"
         android:supportsRtl="true"
         android:theme="@style/FullscreenTheme">
 
         <activity
             android:name=".activity.DrawingActivity"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@mipmap/crayon_box"
             android:label="@string/title_drawing"
             android:screenOrientation="sensorLandscape">
             <intent-filter>
@@ -25,7 +25,7 @@
 
         <activity
             android:name=".activity.ColoringActivity"
-            android:icon="@mipmap/ic_launcher_round"
+            android:icon="@mipmap/crayon_box"
             android:label="@string/title_coloring"
             android:screenOrientation="sensorLandscape">
             <intent-filter>
