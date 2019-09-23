@@ -1,3 +1,1 @@
 include ':app'
-include ':kitkitlogger'
-project(':kitkitlogger').projectDir = new File('../kitkitschoollogger/kitkitlogger/')

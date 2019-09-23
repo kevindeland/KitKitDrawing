@@ -33,8 +33,6 @@ import com.enuma.drawingcoloring.utility.Util;
 import com.enuma.drawingcoloring.view.ViewDrawingColoring;
 import com.enuma.drawingcoloring.view.ViewPen;
 import com.enuma.drawingcoloring.view.base.LockableScrollView;
-import com.enuma.kitkitProvider.KitkitDBHandler;
-import com.enuma.kitkitProvider.User;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -59,8 +57,7 @@ public class DrawingColoringActivity extends BaseActivity {
     protected Preference mPreference;
     private EffectSound mEffectSound;
     private float mScale;
-    private KitkitDBHandler mKitkitDBHandler;
-    private User mUser;
+    // private User mUser;
     private String mSavePath = "";
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +99,6 @@ public class DrawingColoringActivity extends BaseActivity {
         mThisActivity = this;
         mPreference = Preference.getInstance(mThisActivity);
         mEffectSound = EffectSound.getInstance(mThisActivity);
-        mKitkitDBHandler = new KitkitDBHandler(mThisActivity);
 
         if (savedInstanceState == null) {
             Bundle extras = getIntent().getExtras();
@@ -363,15 +359,15 @@ public class DrawingColoringActivity extends BaseActivity {
     }
 
     private void getUser() {
-        mUser = mKitkitDBHandler.getCurrentUser();
+        // mUser = mKitkitDBHandler.getCurrentUser();
 
-        if (mUser == null) {
+        //if (mUser == null) {
             mSavePath = Const.SAVE_PATH + File.separator;
 
-        } else {
-            mSavePath = Const.SAVE_PATH + File.separator + mUser.getUserName() + File.separator;
+        //} else {
+            // mSavePath = Const.SAVE_PATH + File.separator + mUser.getUserName() + File.separator;
 
-        }
+        //}
     }
 
     private void processSaveAmount() {

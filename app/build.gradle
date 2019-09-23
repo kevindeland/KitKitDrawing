@@ -12,6 +12,16 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
+    // Create a variable called keystorePropertiesFile, and initialize it to your
+    // keystore.properties file, in the rootProject folder.
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+
+    // Initialize a new Properties() object called keystoreProperties
+    def keystoreProperties = new Properties()
+
+    // Load your keystore.properties file into the keystoreProperties object.
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
     signingConfigs {
         debug {
             storeFile file('../debug.keystore')
@@ -19,34 +29,35 @@ android {
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
-        release {
-            if (project.hasProperty("RELEASE_STORE_FILE")) {
-                storeFile file(RELEASE_STORE_FILE)
-                storePassword RELEASE_STORE_PASSWORD
-                keyAlias RELEASE_KEY_ALIAS
-                keyPassword RELEASE_KEY_PASSWORD
-            }
+        android {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
         }
     }
 
     buildTypes {
+
+        debug {
+            debuggable true
+        }
+
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.release
-            }
-            applicationVariants.all { variant ->
-                variant.outputs.each { output ->
-                    project.ext { appName = rootProject.name }
-//                    def formattedDate = new Date().format('yyyyMMdd')
-                    def newName = output.outputFile.name
-                    newName = newName.replace("app-", "$project.ext.appName-")
-//                    newName = newName.replace("-release", "-release" + formattedDate)
-                    //noinspection GroovyAssignabilityCheck
-                    output.outputFile = new File(output.outputFile.parent, newName)
-                }
-            }
+            signingConfig signingConfigs.android
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def project = "drawing"
+            def SEP = "."
+            def buildType = variant.variantData.variantConfiguration.buildType.name
+            def version = variant.versionName
+
+            def newApkName = project + SEP + buildType + SEP + version + ".apk"
+            output.outputFile = new File(output.outputFile.parent, newApkName)
         }
     }
 
@@ -67,5 +78,4 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.1'
     testCompile 'junit:junit:4.12'
-    compile project(path: ':kitkitlogger', configuration: 'release')
 }
