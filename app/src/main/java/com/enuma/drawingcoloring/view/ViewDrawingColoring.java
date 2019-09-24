@@ -39,6 +39,11 @@ public class ViewDrawingColoring extends View {
         COLORING
     }
 
+    public enum DRAW_MODE {
+        SINGLE,
+        RADIAL
+    }
+
     /**
      * Brush 이미지의 수평 갯수
      */
@@ -89,6 +94,7 @@ public class ViewDrawingColoring extends View {
 
     private Callback mCallback;
     private MODE mMode = MODE.DRAWING;
+    private DRAW_MODE mDrawMode = DRAW_MODE.SINGLE;
     private int mCurrentColor;
     private int mTouchId;
     private float mTouchOriginX, mTouchOriginY;
@@ -258,18 +264,20 @@ public class ViewDrawingColoring extends View {
                     (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
             drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
 
-            int revXEnd = (int) (mTouchRevX - dx);
-            int revYEnd = (int) (mTouchRevY - dy);
-            Log.i("WALK_LINE", String.format("Drawing from [%d, %d] to [%d, %d]",
-                    (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd));
-            drawLineWithBrush(mCanvasBuffer, (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd);
-
             mTouchPosX = x;
             mTouchPosY = y;
 
-            mTouchRevX = mTouchRevX - dx;
-            mTouchRevY = mTouchRevY - dy;
+            if (getDrawMode() == DRAW_MODE.RADIAL) {
+                int revXEnd = (int) (mTouchRevX - dx);
+                int revYEnd = (int) (mTouchRevY - dy);
+                Log.i("WALK_LINE", String.format("Drawing from [%d, %d] to [%d, %d]",
+                        (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd));
+                drawLineWithBrush(mCanvasBuffer, (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd);
 
+                mTouchRevX = mTouchRevX - dx;
+                mTouchRevY = mTouchRevY - dy;
+
+            }
             // mTouchRevX is something to do with dx and dy
         }
     }
@@ -386,6 +394,13 @@ public class ViewDrawingColoring extends View {
 
     public MODE getMode() {
         return mMode;
+    }
+
+    public void setDrawMode(DRAW_MODE mode) {
+        mDrawMode = mode;
+    }
+    public DRAW_MODE getDrawMode() {
+        return mDrawMode;
     }
 
     public void setPenColor(int color) {

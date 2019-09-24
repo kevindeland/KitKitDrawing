@@ -64,6 +64,7 @@ public class DrawingColoringActivity extends BaseActivity {
 
     protected ImageView mVChangeBg;
     private View mVSave;
+    protected ImageView mVChangeMode;
     private ViewGroup mLayoutDrawing;
     private ViewDrawingColoring mVDrawingColoring;
     protected ImageView mIvColoring;
@@ -194,6 +195,9 @@ public class DrawingColoringActivity extends BaseActivity {
 
         mVChangeBg = (ImageView) findViewById(R.id.v_bg);
         mVChangeBg.setOnClickListener(mOnClickListener);
+
+        mVChangeMode = (ImageView) findViewById(R.id.v_mode);
+        mVChangeMode.setOnClickListener(mOnClickListener);
 
         mVSave = findViewById(R.id.v_save);
         mVSave.setOnClickListener(mOnClickListener);
@@ -456,6 +460,17 @@ public class DrawingColoringActivity extends BaseActivity {
 
 
                     }
+                } else if (id == R.id.v_mode) {
+
+                    // change mode, and change image
+                    ViewDrawingColoring.DRAW_MODE prevMode = mVDrawingColoring.getDrawMode();
+                    mVDrawingColoring.setDrawMode(prevMode == ViewDrawingColoring.DRAW_MODE.SINGLE ?
+                            ViewDrawingColoring.DRAW_MODE.RADIAL : ViewDrawingColoring.DRAW_MODE.SINGLE);
+
+                    mVChangeMode.setImageDrawable(getResources().getDrawable(
+                            prevMode == ViewDrawingColoring.DRAW_MODE.SINGLE ?
+                                     R.drawable.selector_mode_radial : R.drawable.selector_mode_straight));
+
                 }
             }
         }

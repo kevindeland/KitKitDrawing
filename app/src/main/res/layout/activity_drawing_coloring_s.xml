@@ -38,6 +38,17 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/v_mode"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginLeft="800px"
+        android:layout_marginTop="32px"
+        android:src="@drawable/mode_straight_normal"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        />
+
     <com.enuma.drawingcoloring.view.base.LockableScrollView
         android:id="@+id/scrollView"
         android:layout_width="159px"
