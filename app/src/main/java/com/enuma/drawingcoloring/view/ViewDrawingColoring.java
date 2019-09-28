@@ -100,6 +100,7 @@ public class ViewDrawingColoring extends View {
     private float mTouchOriginX, mTouchOriginY;
     private float mTouchPosX, mTouchPosY;
     private float mTouchRevX, mTouchRevY;
+    private float[] mTouchAngleX, mTouchAngleY;
 
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -223,6 +224,9 @@ public class ViewDrawingColoring extends View {
         mTouchRevX =x;
         mTouchRevY = y;
 
+        mTouchAngleX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
+        mTouchAngleY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
+
 //        if (mMode == MODE.DRAWING) {
 //            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
 //
@@ -244,11 +248,26 @@ public class ViewDrawingColoring extends View {
             return;
         }
 
+        String LINE_TAG = "WALK_LINE";
+
         float vdx = Math.abs(x - mTouchPosX); // how much x has changed since last event
         float vdy = Math.abs(y - mTouchPosY); // how much y has changed since last event
 
         float dx = x - mTouchPosX; // need these for symmetry
         float dy = y - mTouchPosY;
+
+        double distance = Util.getDistanceBetween2Point((int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+        double angle = Util.getRadianAngleBetween2Point((int) (mTouchPosX * 1000),
+                (int) (mTouchPosY * 1000), (int) (x * 1000), (int) (y * 1000));
+        double angleReverse = angle - Math.toRadians(180);
+
+        // This was useful for debugging
+        Log.v(LINE_TAG, String.format("Ø=%f; dx=%f; dy=%f; rcosØ=%f; rsinØ=%f", angle, dx, dy, distance*Math.sin(angle), distance*Math.cos(angle)));
+        Log.v(LINE_TAG, String.format("mTouchPosX=%f; mTouchPosY=%f; x=%f; y=%f", mTouchPosX, mTouchPosY, x, y));
+        Log.v(LINE_TAG, String.format("dx=%f; dy=%f", dx, dy));
+        Log.v(LINE_TAG, String.format("Ø=%f, -dx=%f; -dy=%f; rcos(Ø-180)=%f; rsin(Ø-180)=%f", angleReverse, -dx, -dy,
+                distance*Math.sin(angleReverse), distance*Math.cos(angleReverse)));
+
 
         if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
 
@@ -260,25 +279,32 @@ public class ViewDrawingColoring extends View {
 //
 //            }
 
-            Log.i("WALK_LINE", String.format("Drawing from [%d, %d] to [%d, %d]",
+            Log.v(LINE_TAG, String.format("Drawing from [%d, %d] to [%d, %d]",
                     (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
             drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
 
             mTouchPosX = x;
             mTouchPosY = y;
 
+            int NUM_ANGLES = 8; // TODO allow switching between different NUM_ANGLES
             if (getDrawMode() == DRAW_MODE.RADIAL) {
-                int revXEnd = (int) (mTouchRevX - dx);
-                int revYEnd = (int) (mTouchRevY - dy);
-                Log.i("WALK_LINE", String.format("Drawing from [%d, %d] to [%d, %d]",
-                        (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd));
-                drawLineWithBrush(mCanvasBuffer, (int) mTouchRevX, (int) mTouchRevY, revXEnd, revYEnd);
 
-                mTouchRevX = mTouchRevX - dx;
-                mTouchRevY = mTouchRevY - dy;
+                // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
+                int angleDivisor = 360 / NUM_ANGLES;
+                int angleXEnd, angleYEnd;
+                for (int i=1; i<NUM_ANGLES; i++) {
+                    angleReverse = angle - Math.toRadians(i* angleDivisor);
+                    Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
+                    angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
+                    angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
 
+                    drawLineWithBrush(mCanvasBuffer, (int) mTouchAngleX[i-1], (int) mTouchAngleY[i-1],
+                            (int) mTouchAngleX[i-1] + angleXEnd, (int) mTouchAngleY[i-1] + angleYEnd);
+
+                    mTouchAngleX[i-1] = mTouchAngleX[i-1] + angleXEnd;
+                    mTouchAngleY[i-1] = mTouchAngleY[i-1] + angleYEnd;
+                }
             }
-            // mTouchRevX is something to do with dx and dy
         }
     }
 
@@ -333,7 +359,7 @@ public class ViewDrawingColoring extends View {
         // MAGIC here is where it is!!!!
         int distance = (int) Util.getDistanceBetween2Point(startX, startY, endX, endY);
         double angle = Util.getRadianAngleBetween2Point(startX, startY, endX, endY);
-        double angleReverse = Util.getRadianAngleBetween2Point(endX, endY, startX, startY);
+        double angleReverse = angle - Math.toRadians(180); // duh...
 
         Log.i("MAGIC", String.format("distance=%d, angle=%f", distance, angle));
 
