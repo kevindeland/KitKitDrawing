@@ -41,7 +41,8 @@ public class ViewDrawingColoring extends View {
 
     public enum DRAW_MODE {
         SINGLE,
-        RADIAL
+        RADIAL_2,
+        RADIAL_8
     }
 
     /**
@@ -286,24 +287,34 @@ public class ViewDrawingColoring extends View {
             mTouchPosX = x;
             mTouchPosY = y;
 
-            int NUM_ANGLES = 8; // TODO allow switching between different NUM_ANGLES
-            if (getDrawMode() == DRAW_MODE.RADIAL) {
+            int NUM_ANGLES = 3;
 
-                // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
-                int angleDivisor = 360 / NUM_ANGLES;
-                int angleXEnd, angleYEnd;
-                for (int i=1; i<NUM_ANGLES; i++) {
-                    angleReverse = angle - Math.toRadians(i* angleDivisor);
-                    Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
-                    angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
-                    angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
+            switch(getDrawMode()) {
+                case SINGLE:
+                    return; // don't do extra drawing... this could be refactored
 
-                    drawLineWithBrush(mCanvasBuffer, (int) mTouchAngleX[i-1], (int) mTouchAngleY[i-1],
-                            (int) mTouchAngleX[i-1] + angleXEnd, (int) mTouchAngleY[i-1] + angleYEnd);
+                case RADIAL_2:
+                    NUM_ANGLES = 2;
+                    break;
 
-                    mTouchAngleX[i-1] = mTouchAngleX[i-1] + angleXEnd;
-                    mTouchAngleY[i-1] = mTouchAngleY[i-1] + angleYEnd;
-                }
+                case RADIAL_8:
+                    NUM_ANGLES = 8;
+            }
+
+            // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
+            int angleDivisor = 360 / NUM_ANGLES;
+            int angleXEnd, angleYEnd;
+            for (int i=1; i<NUM_ANGLES; i++) {
+                angleReverse = angle - Math.toRadians(i* angleDivisor);
+                Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
+                angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
+                angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
+
+                drawLineWithBrush(mCanvasBuffer, (int) mTouchAngleX[i-1], (int) mTouchAngleY[i-1],
+                        (int) mTouchAngleX[i-1] + angleXEnd, (int) mTouchAngleY[i-1] + angleYEnd);
+
+                mTouchAngleX[i-1] = mTouchAngleX[i-1] + angleXEnd;
+                mTouchAngleY[i-1] = mTouchAngleY[i-1] + angleYEnd;
             }
         }
     }

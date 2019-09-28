@@ -42,6 +42,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.DRAW_MODE.RADIAL_2;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.DRAW_MODE.RADIAL_8;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.DRAW_MODE.SINGLE;
+
 public class DrawingColoringActivity extends BaseActivity {
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -463,13 +467,28 @@ public class DrawingColoringActivity extends BaseActivity {
                 } else if (id == R.id.v_mode) {
 
                     // change mode, and change image
-                    ViewDrawingColoring.DRAW_MODE prevMode = mVDrawingColoring.getDrawMode();
-                    mVDrawingColoring.setDrawMode(prevMode == ViewDrawingColoring.DRAW_MODE.SINGLE ?
-                            ViewDrawingColoring.DRAW_MODE.RADIAL : ViewDrawingColoring.DRAW_MODE.SINGLE);
+                    ViewDrawingColoring.DRAW_MODE nextMode;
+                    int nextDraw;
+                    switch(mVDrawingColoring.getDrawMode()) {
+                        case SINGLE:
+                            nextMode = RADIAL_2;
+                            nextDraw = R.drawable.selector_mode_radial2;
+                            break;
 
-                    mVChangeMode.setImageDrawable(getResources().getDrawable(
-                            prevMode == ViewDrawingColoring.DRAW_MODE.SINGLE ?
-                                     R.drawable.selector_mode_radial : R.drawable.selector_mode_straight));
+                        case RADIAL_2:
+                            nextMode = RADIAL_8;
+                            nextDraw = R.drawable.selector_mode_radial8;
+                            break;
+
+                        case RADIAL_8:
+                        default:
+                            nextMode = SINGLE;
+                            nextDraw = R.drawable.selector_mode_straight;
+
+                    }
+                    mVDrawingColoring.setDrawMode(nextMode);
+
+                    mVChangeMode.setImageDrawable(getResources().getDrawable(nextDraw));
 
                 }
             }
