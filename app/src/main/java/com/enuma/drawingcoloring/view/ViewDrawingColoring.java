@@ -45,6 +45,12 @@ public class ViewDrawingColoring extends View {
         RADIAL_8
     }
 
+    public enum PARALLEL_MODE {
+        DEFAULT,
+        PLACE,
+        DRAW
+    }
+
     /**
      * Brush 이미지의 수평 갯수
      */
@@ -103,6 +109,13 @@ public class ViewDrawingColoring extends View {
     private float mTouchRevX, mTouchRevY;
     private float[] mTouchAngleX, mTouchAngleY;
 
+
+    // variables for parallel mode
+    private PARALLEL_MODE mParellelMode;
+    private Point[] mParallelPoints; // the origins for all parallel sources...
+
+
+
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
 
@@ -146,6 +159,22 @@ public class ViewDrawingColoring extends View {
         mPaintColoring.setStrokeJoin(Paint.Join.ROUND);
         mPaintColoring.setStrokeCap(Paint.Cap.ROUND);
         mPaintColoring.setStrokeWidth(BRUSH_POINT_WIDTH / 3.0f * 2);
+
+
+        // MODE_PARALLEL initialize defaults for testing
+        mParellelMode = PARALLEL_MODE.DRAW;
+        mParallelPoints = new Point[] {
+                new Point (800, 200),
+                new Point (1400, 200),
+                new Point (2000, 200),
+                new Point (800, 800),
+                new Point (1400, 800),
+                new Point (2000, 800),
+                new Point (800, 1400),
+                new Point (1400, 1400),
+                new Point (2000, 1400)
+        };
+
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -282,7 +311,25 @@ public class ViewDrawingColoring extends View {
 
             Log.v(LINE_TAG, String.format("Drawing from [%d, %d] to [%d, %d]",
                     (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
-            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+
+
+            if (mParellelMode == PARALLEL_MODE.DRAW) {
+
+                Point referenceOrigin = mParallelPoints[mParallelPoints.length - 1];
+                for(int i=0; i < mParallelPoints.length; i++) {
+                    Point localOrigin = mParallelPoints[i];
+
+                    int xOffset = referenceOrigin.x - localOrigin.x;
+                    int yOffset = referenceOrigin.y - localOrigin.y;
+
+                    drawLineWithBrush(mCanvasBuffer,
+                            (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
+                            (int) x - xOffset, (int) y - yOffset);
+                }
+            } else {
+                // only draw one
+                drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+            }
 
             mTouchPosX = x;
             mTouchPosY = y;
