@@ -95,7 +95,7 @@ public class ViewDrawingColoring extends View {
 
     private Callback mCallback;
     private MODE mMode = MODE.DRAWING;
-    private RADIAL_MODE mDrawMode = RADIAL_MODE.SINGLE;
+    private RADIAL_MODE mRadialMode = RADIAL_MODE.SINGLE;
     private int mCurrentColor;
     private int mTouchId;
     private float mTouchOriginX, mTouchOriginY;
@@ -289,7 +289,7 @@ public class ViewDrawingColoring extends View {
 
             int NUM_ANGLES = 3;
 
-            switch(getDrawMode()) {
+            switch(getRadialMode()) {
                 case SINGLE:
                     return; // don't do extra drawing... this could be refactored
 
@@ -433,11 +433,11 @@ public class ViewDrawingColoring extends View {
         return mMode;
     }
 
-    public void setDrawMode(RADIAL_MODE mode) {
-        mDrawMode = mode;
+    public void setRadialMode(RADIAL_MODE mode) {
+        mRadialMode = mode;
     }
-    public RADIAL_MODE getDrawMode() {
-        return mDrawMode;
+    public RADIAL_MODE getRadialMode() {
+        return mRadialMode;
     }
 
     public void setPenColor(int color) {
