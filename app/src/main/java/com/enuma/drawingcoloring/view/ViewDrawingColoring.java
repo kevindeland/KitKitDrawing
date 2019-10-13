@@ -39,7 +39,7 @@ public class ViewDrawingColoring extends View {
         COLORING
     }
 
-    public enum DRAW_MODE {
+    public enum RADIAL_MODE {
         SINGLE,
         RADIAL_2,
         RADIAL_8
@@ -95,7 +95,7 @@ public class ViewDrawingColoring extends View {
 
     private Callback mCallback;
     private MODE mMode = MODE.DRAWING;
-    private DRAW_MODE mDrawMode = DRAW_MODE.SINGLE;
+    private RADIAL_MODE mDrawMode = RADIAL_MODE.SINGLE;
     private int mCurrentColor;
     private int mTouchId;
     private float mTouchOriginX, mTouchOriginY;
@@ -433,10 +433,10 @@ public class ViewDrawingColoring extends View {
         return mMode;
     }
 
-    public void setDrawMode(DRAW_MODE mode) {
+    public void setDrawMode(RADIAL_MODE mode) {
         mDrawMode = mode;
     }
-    public DRAW_MODE getDrawMode() {
+    public RADIAL_MODE getDrawMode() {
         return mDrawMode;
     }
 

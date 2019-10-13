@@ -42,9 +42,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 
-import static com.enuma.drawingcoloring.view.ViewDrawingColoring.DRAW_MODE.RADIAL_2;
-import static com.enuma.drawingcoloring.view.ViewDrawingColoring.DRAW_MODE.RADIAL_8;
-import static com.enuma.drawingcoloring.view.ViewDrawingColoring.DRAW_MODE.SINGLE;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.RADIAL_2;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.RADIAL_8;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.SINGLE;
 
 public class DrawingColoringActivity extends BaseActivity {
 
@@ -467,7 +467,7 @@ public class DrawingColoringActivity extends BaseActivity {
                 } else if (id == R.id.v_mode) {
 
                     // change mode, and change image
-                    ViewDrawingColoring.DRAW_MODE nextMode;
+                    ViewDrawingColoring.RADIAL_MODE nextMode;
                     int nextDraw;
                     switch(mVDrawingColoring.getDrawMode()) {
                         case SINGLE:
