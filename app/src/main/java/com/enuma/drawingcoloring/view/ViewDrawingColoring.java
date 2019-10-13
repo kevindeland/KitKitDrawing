@@ -113,6 +113,8 @@ public class ViewDrawingColoring extends View {
     // variables for parallel mode
     private PARALLEL_MODE mParellelMode;
     private Point[] mParallelPoints; // the origins for all parallel sources...
+    private int mParallelNumPoints;
+    private int mParallelRootReference = -1; // that last one placed
 
 
 
@@ -162,19 +164,8 @@ public class ViewDrawingColoring extends View {
 
 
         // MODE_PARALLEL initialize defaults for testing
-        mParellelMode = PARALLEL_MODE.DRAW;
-        mParallelPoints = new Point[] {
-                new Point (800, 200),
-                new Point (1400, 200),
-                new Point (2000, 200),
-                new Point (800, 800),
-                new Point (1400, 800),
-                new Point (2000, 800),
-                new Point (800, 1400),
-                new Point (1400, 1400),
-                new Point (2000, 1400)
-        };
-
+        mParellelMode = PARALLEL_MODE.DEFAULT;
+        mParallelPoints = new Point[10];
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -315,9 +306,11 @@ public class ViewDrawingColoring extends View {
 
             if (mParellelMode == PARALLEL_MODE.DRAW) {
 
-                Point referenceOrigin = mParallelPoints[mParallelPoints.length - 1];
-                for(int i=0; i < mParallelPoints.length; i++) {
+                Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
+                Point referenceOrigin = mParallelPoints[mParallelRootReference];
+                for(int i=0; i < mParallelNumPoints; i++) {
                     Point localOrigin = mParallelPoints[i];
+                    Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
 
                     int xOffset = referenceOrigin.x - localOrigin.x;
                     int yOffset = referenceOrigin.y - localOrigin.y;
@@ -487,6 +480,39 @@ public class ViewDrawingColoring extends View {
         return mRadialMode;
     }
 
+    /* -- PARALLEL MODE -- */
+    public void setParellelMode(PARALLEL_MODE mParellelMode) {
+        this.mParellelMode = mParellelMode;
+    }
+
+    public PARALLEL_MODE getParellelMode() {
+        return mParellelMode;
+    }
+
+    public void resetParallelOrigins() {
+        mParallelPoints = new Point[10];
+        mParallelNumPoints = 0;
+        mParallelRootReference = -1;
+    }
+
+    public void placeParallelOrigin(Point origin) {
+        // update pointer counter
+        mParallelRootReference++;
+        if (mParallelNumPoints < 10)
+            mParallelNumPoints++;
+        // if more than 10, reset last one
+        if (mParallelRootReference == 9)
+            mParallelRootReference = 0; // reset!
+        // add to array
+        mParallelPoints[mParallelRootReference] = origin;
+
+
+        // also later... remove views
+
+    }
+
+    /* -- END PARALLEL MODE -- */
+
     public void setPenColor(int color) {
         mCurrentColor = color;
 
@@ -528,22 +554,30 @@ public class ViewDrawingColoring extends View {
             isInvalidate = true;
         }
 
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-                doTouchDown(x, y);
-                break;
+        // when placing, do this thing
+        if (getParellelMode() == PARALLEL_MODE.PLACE) {
+            if (action == MotionEvent.ACTION_UP)
+                placeParallelOrigin(new Point((int) x, (int) y));
 
-            case MotionEvent.ACTION_MOVE:
-                doTouchMove(x, y);
-                break;
+        } else {
 
-            case MotionEvent.ACTION_UP:
-                doTouchUp(x, y);
-                break;
-        }
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    doTouchDown(x, y);
+                    break;
 
-        if (isInvalidate == true) {
-            invalidate();
+                case MotionEvent.ACTION_MOVE:
+                    doTouchMove(x, y);
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    doTouchUp(x, y);
+                    break;
+            }
+
+            if (isInvalidate == true) {
+                invalidate();
+            }
         }
     }
 

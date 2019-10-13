@@ -42,6 +42,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.PARALLEL_MODE.DEFAULT;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.PARALLEL_MODE.DRAW;
+import static com.enuma.drawingcoloring.view.ViewDrawingColoring.PARALLEL_MODE.PLACE;
 import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.RADIAL_2;
 import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.RADIAL_8;
 import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.SINGLE;
@@ -69,6 +72,7 @@ public class DrawingColoringActivity extends BaseActivity {
     protected ImageView mVChangeBg;
     private View mVSave;
     protected ImageView mVChangeMode;
+    protected ImageView mVChangeParallel;
     private ViewGroup mLayoutDrawing;
     private ViewDrawingColoring mVDrawingColoring;
     protected ImageView mIvColoring;
@@ -200,8 +204,13 @@ public class DrawingColoringActivity extends BaseActivity {
         mVChangeBg = (ImageView) findViewById(R.id.v_bg);
         mVChangeBg.setOnClickListener(mOnClickListener);
 
+        // RADIAL
         mVChangeMode = (ImageView) findViewById(R.id.v_mode);
         mVChangeMode.setOnClickListener(mOnClickListener);
+
+        // PARALLEL
+        mVChangeParallel = (ImageView) findViewById(R.id.v_parallel);
+        mVChangeParallel.setOnClickListener(mOnClickListener);
 
         mVSave = findViewById(R.id.v_save);
         mVSave.setOnClickListener(mOnClickListener);
@@ -490,6 +499,26 @@ public class DrawingColoringActivity extends BaseActivity {
 
                     mVChangeMode.setImageDrawable(getResources().getDrawable(nextDraw));
 
+                } else if (id == R.id.v_parallel) {
+
+                    ViewDrawingColoring.PARALLEL_MODE nextMode;
+                    switch(mVDrawingColoring.getParellelMode()) {
+                        case DEFAULT:
+                            nextMode = PLACE;
+                            mVDrawingColoring.resetParallelOrigins();
+                            break;
+
+                         case PLACE:
+                            nextMode = DRAW;
+                            break;
+
+                        case DRAW:
+                        default:
+                            nextMode = DEFAULT;
+                            break;
+                    }
+                    mVDrawingColoring.setParellelMode(nextMode);
+                    // change parallel mode and change image (still need icons
                 }
             }
         }
