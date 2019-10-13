@@ -469,7 +469,7 @@ public class DrawingColoringActivity extends BaseActivity {
                     // change mode, and change image
                     ViewDrawingColoring.RADIAL_MODE nextMode;
                     int nextDraw;
-                    switch(mVDrawingColoring.getDrawMode()) {
+                    switch(mVDrawingColoring.getRadialMode()) {
                         case SINGLE:
                             nextMode = RADIAL_2;
                             nextDraw = R.drawable.selector_mode_radial2;
@@ -486,7 +486,7 @@ public class DrawingColoringActivity extends BaseActivity {
                             nextDraw = R.drawable.selector_mode_straight;
 
                     }
-                    mVDrawingColoring.setDrawMode(nextMode);
+                    mVDrawingColoring.setRadialMode(nextMode);
 
                     mVChangeMode.setImageDrawable(getResources().getDrawable(nextDraw));
 
