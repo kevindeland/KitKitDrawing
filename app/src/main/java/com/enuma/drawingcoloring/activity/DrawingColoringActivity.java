@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +21,7 @@ import android.view.animation.AnimationUtils;
 import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.base.BaseActivity;
@@ -49,7 +51,7 @@ import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.RAD
 import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.RADIAL_8;
 import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.SINGLE;
 
-public class DrawingColoringActivity extends BaseActivity {
+public class DrawingColoringActivity extends BaseActivity implements GleaphHolder {
 
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -76,6 +78,8 @@ public class DrawingColoringActivity extends BaseActivity {
     private ViewGroup mLayoutDrawing;
     private ViewDrawingColoring mVDrawingColoring;
     protected ImageView mIvColoring;
+
+    private RelativeLayout mVSupportLayer;
 
     private ViewPen[] mVPens = new ViewPen[TOTAL_PEN_COLOR_COUNT];
     private ViewPen[] mVSelectedPensEffect = new ViewPen[TOTAL_PEN_COLOR_COUNT];
@@ -218,7 +222,9 @@ public class DrawingColoringActivity extends BaseActivity {
         mLayoutDrawing = (ViewGroup) findViewById(R.id.layout_drawing);
         mVDrawingColoring = (ViewDrawingColoring) findViewById(R.id.v_drawing_coloring);
         mVDrawingColoring.setCallback(mViewDrawingCoCallback);
+        mVDrawingColoring.setGleaphHolder(this);
         mIvColoring = (ImageView) findViewById(R.id.iv_coloring);
+        mVSupportLayer = (RelativeLayout) findViewById(R.id.v_support_layer);
 
         Bitmap bitmapPen = BitmapFactory.decodeResource(getResources(), R.drawable.drawingpad_crayon_1_white);
 
@@ -311,6 +317,22 @@ public class DrawingColoringActivity extends BaseActivity {
         mIvSaveEffect = (ImageView) findViewById(R.id.iv_save_effect);
 
         mScale = Util.setScale(mThisActivity, findViewById(R.id.layout_root), false);
+    }
+
+    public void addOneGleaphFrame(int left, int top) {
+        // PARALLEL see what happens √√√
+        // PARALLEL heck yeah... next make this a method
+        ImageView testFrame = new ImageView(this);
+        testFrame.setImageDrawable(getResources().getDrawable(R.drawable.frame));
+        RelativeLayout.LayoutParams imageParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        imageParams.leftMargin = left;
+        imageParams.topMargin = top;
+        testFrame.setLayoutParams(imageParams);
+        mVSupportLayer.addView(testFrame);
+    }
+
+    public void removeAllGleaphFrames() {
+        mVSupportLayer.removeAllViews();
     }
 
     private void setNeedSave(boolean bNeedSave) {
@@ -502,22 +524,28 @@ public class DrawingColoringActivity extends BaseActivity {
                 } else if (id == R.id.v_parallel) {
 
                     ViewDrawingColoring.PARALLEL_MODE nextMode;
+                    int nextDraw;
                     switch(mVDrawingColoring.getParellelMode()) {
                         case DEFAULT:
                             nextMode = PLACE;
+                            nextDraw = R.drawable.selector_parallel_place;
                             mVDrawingColoring.resetParallelOrigins();
                             break;
 
                          case PLACE:
                             nextMode = DRAW;
+                            nextDraw = R.drawable.selector_parallel_draw;
                             break;
 
                         case DRAW:
                         default:
                             nextMode = DEFAULT;
+                            nextDraw = R.drawable.selector_parallel_off;
+                            removeAllGleaphFrames();
                             break;
                     }
                     mVDrawingColoring.setParellelMode(nextMode);
+                    mVChangeParallel.setImageDrawable(getResources().getDrawable(nextDraw));
                     // change parallel mode and change image (still need icons
                 }
             }

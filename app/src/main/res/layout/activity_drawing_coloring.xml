@@ -55,7 +55,7 @@
         android:layout_height="60dp"
         android:layout_marginLeft="80px"
         android:layout_marginTop="48px"
-        android:src="@drawable/mode_straight_normal"
+        android:src="@drawable/selector_parallel_off"
         app:layout_constraintLeft_toRightOf="@id/v_mode"
         app:layout_constraintTop_toTopOf="parent"
         />
@@ -129,6 +129,11 @@
                 android:layout_height="match_parent"
                 android:scaleType="fitCenter"
                 android:visibility="gone" />
+
+            <RelativeLayout
+                android:id="@+id/v_support_layer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
         </FrameLayout>
 

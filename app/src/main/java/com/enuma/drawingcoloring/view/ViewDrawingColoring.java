@@ -19,6 +19,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.enuma.drawingcoloring.R;
+import com.enuma.drawingcoloring.activity.GleaphHolder;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
 import com.enuma.drawingcoloring.utility.Util;
@@ -129,6 +130,9 @@ public class ViewDrawingColoring extends View {
     private boolean mbInit = false;
     ////////////////////////////////////////////////////////////////////////////////
 
+    private GleaphHolder mGleaphHolder;
+    ////////////////////////////////////////////////////
+
     public ViewDrawingColoring(Context context) {
         super(context);
         init(context);
@@ -166,6 +170,10 @@ public class ViewDrawingColoring extends View {
         // MODE_PARALLEL initialize defaults for testing
         mParellelMode = PARALLEL_MODE.DEFAULT;
         mParallelPoints = new Point[10];
+    }
+
+    public void setGleaphHolder (GleaphHolder holder)  {
+        mGleaphHolder = holder;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -556,8 +564,10 @@ public class ViewDrawingColoring extends View {
 
         // when placing, do this thing
         if (getParellelMode() == PARALLEL_MODE.PLACE) {
-            if (action == MotionEvent.ACTION_UP)
+            if (action == MotionEvent.ACTION_UP) {
                 placeParallelOrigin(new Point((int) x, (int) y));
+                mGleaphHolder.addOneGleaphFrame((int) x, (int) y);
+            }
 
         } else {
 
