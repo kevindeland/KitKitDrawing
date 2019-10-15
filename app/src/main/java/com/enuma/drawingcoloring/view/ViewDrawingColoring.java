@@ -20,11 +20,13 @@ import android.view.View;
 
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.GleaphHolder;
+import com.enuma.drawingcoloring.types.UnitVector;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
 import com.enuma.drawingcoloring.utility.Util;
 
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * MODE.DRAWING : 크레용 질감 표현 (Brush Image (5 * 2) 이용)
@@ -50,6 +52,11 @@ public class ViewDrawingColoring extends View {
         DEFAULT,
         PLACE,
         DRAW
+    }
+
+    public enum VECTOR_MODE {
+        OFF,
+        VECTOR
     }
 
     /**
@@ -118,6 +125,10 @@ public class ViewDrawingColoring extends View {
     private int mParallelRootReference = -1; // that last one placed
 
 
+    // variables for VectorMode
+    private VECTOR_MODE mVectorMode = VECTOR_MODE.VECTOR;
+    private UnitVector mCurrentVector;
+    private ArrayList<UnitVector> mAllVectors = new ArrayList<>();
 
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -214,7 +225,7 @@ public class ViewDrawingColoring extends View {
 //                x = event.getX(event.findPointerIndex(mTouchId));
 //                y = event.getY(event.findPointerIndex(mTouchId));
 //
-//                doTouchDown(x, y);
+//                doTouchDownBrush(x, y);
 //                invalidate();
 //                break;
 //
@@ -222,7 +233,7 @@ public class ViewDrawingColoring extends View {
 //                if (event.findPointerIndex(mTouchId) != -1) {
 //                    x = event.getX(event.findPointerIndex(mTouchId));
 //                    y = event.getY(event.findPointerIndex(mTouchId));
-//                    doTouchMove(x, y);
+//                    doTouchMoveBrush(x, y);
 //                }
 //                invalidate();
 //                break;
@@ -231,7 +242,7 @@ public class ViewDrawingColoring extends View {
 //                if (event.findPointerIndex(mTouchId) != -1) {
 //                    x = event.getX(event.findPointerIndex(mTouchId));
 //                    y = event.getY(event.findPointerIndex(mTouchId));
-//                    doTouchUp(x, y);
+//                    doTouchUpBrush(x, y);
 //                }
 //                invalidate();
 //                break;
@@ -243,7 +254,7 @@ public class ViewDrawingColoring extends View {
     ////////////////////////////////////////////////////////////////////////////////
 
 
-    private void doTouchDown(float x, float y) {
+    private void doTouchDownBrush(float x, float y) {
         mTouchPosX = x;
         mTouchPosY = y;
 
@@ -272,7 +283,7 @@ public class ViewDrawingColoring extends View {
     }
 
     @SuppressLint("DefaultLocale")
-    private void doTouchMove(float x, float y) {
+    private void doTouchMoveBrush(float x, float y) {
         if (mTouchPosX == Float.MIN_VALUE || mTouchPosY == Float.MIN_VALUE) {
             return;
         }
@@ -314,18 +325,33 @@ public class ViewDrawingColoring extends View {
 
             if (mParellelMode == PARALLEL_MODE.DRAW) {
 
-                Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
-                Point referenceOrigin = mParallelPoints[mParallelRootReference];
-                for(int i=0; i < mParallelNumPoints; i++) {
-                    Point localOrigin = mParallelPoints[i];
-                    Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
+                if (mVectorMode == VECTOR_MODE.OFF) {
+                    Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
+                    Point referenceOrigin = mParallelPoints[mParallelRootReference];
+                    for (int i = 0; i < mParallelNumPoints; i++) {
+                        Point localOrigin = mParallelPoints[i];
+                        Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
 
-                    int xOffset = referenceOrigin.x - localOrigin.x;
-                    int yOffset = referenceOrigin.y - localOrigin.y;
+                        int xOffset = referenceOrigin.x - localOrigin.x;
+                        int yOffset = referenceOrigin.y - localOrigin.y;
 
-                    drawLineWithBrush(mCanvasBuffer,
-                            (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
-                            (int) x - xOffset, (int) y - yOffset);
+                        drawLineWithBrush(mCanvasBuffer,
+                                (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
+                                (int) x - xOffset, (int) y - yOffset);
+                    }
+                } else if (mVectorMode == VECTOR_MODE.VECTOR) {
+
+                    UnitVector referenceVector = mAllVectors.get(0);
+                    for (int i = 0; i < mAllVectors.size(); i++) {
+                        UnitVector localVector = mAllVectors.get(i);
+
+                        int xOffset = referenceVector.origin.x - localVector.origin.x;
+                        int yOffset = referenceVector.origin.y - localVector.origin.y;
+
+                        drawLineWithBrush(mCanvasBuffer,
+                                (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
+                                (int) x - xOffset, (int) y - yOffset);
+                    }
                 }
             } else {
                 // only draw one
@@ -367,7 +393,7 @@ public class ViewDrawingColoring extends View {
         }
     }
 
-    private void doTouchUp(float x, float y) {
+    private void doTouchUpBrush(float x, float y) {
 //        if (mMode == MODE.COLORING) {
 //            if (x == mTouchPosX && y == mTouchPosY) {
 //                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2 + 1, (y + mTouchPosY) / 2 + 1);
@@ -501,6 +527,8 @@ public class ViewDrawingColoring extends View {
         mParallelPoints = new Point[10];
         mParallelNumPoints = 0;
         mParallelRootReference = -1;
+
+        mAllVectors.clear();
     }
 
     public void placeParallelOrigin(Point origin) {
@@ -516,8 +544,9 @@ public class ViewDrawingColoring extends View {
 
 
         // also later... remove views
-
     }
+
+    /*public void placeVectorOrigin()*/
 
     /* -- END PARALLEL MODE -- */
 
@@ -564,31 +593,136 @@ public class ViewDrawingColoring extends View {
 
         // when placing, do this thing
         if (getParellelMode() == PARALLEL_MODE.PLACE) {
-            if (action == MotionEvent.ACTION_UP) {
+            // PARALLEL next --- do this!!! place Vectors instead of points
+            // follow the logic in the SupportLayer...
+            // -- onDown, start a new one
+            // -- onMove, redraw
+            // -- onUp, add to the list
+            /*if (action == MotionEvent.ACTION_UP) {
                 placeParallelOrigin(new Point((int) x, (int) y));
                 mGleaphHolder.addOneGleaphFrame((int) x, (int) y);
-            }
+            }*/
+            doTouchEventVector(action, x, y);
 
         } else {
 
-            switch (action) {
-                case MotionEvent.ACTION_DOWN:
-                    doTouchDown(x, y);
-                    break;
+            doTouchEventBrush(action, x, y);
 
-                case MotionEvent.ACTION_MOVE:
-                    doTouchMove(x, y);
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    doTouchUp(x, y);
-                    break;
-            }
-
-            if (isInvalidate == true) {
+            if (isInvalidate) {
                 invalidate();
             }
         }
+    }
+
+    /**
+     *
+     * @param action
+     * @param x
+     * @param y
+     */
+    private void doTouchEventBrush(int action, float x, float y) {
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                doTouchDownBrush(x, y);
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                doTouchMoveBrush(x, y);
+                break;
+
+            case MotionEvent.ACTION_UP:
+                doTouchUpBrush(x, y);
+                break;
+        }
+    }
+
+    /**
+     * Perform a touch event when in UnitVector drawing mode.
+     * @param action DOWN, MOVE, UP
+     * @param x touch.x
+     * @param y touch.y
+     */
+    private void doTouchEventVector(int action, float x, float y) {
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                doTouchDownVector(x, y);
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                doTouchMoveVector(x, y);
+                break;
+
+            case MotionEvent.ACTION_UP:
+                doTouchUpVector(x, y);
+                break;
+        }
+    }
+
+    /**
+     * Set an origin
+     * @param x touch.x
+     * @param y touch.y
+     */
+    private void doTouchDownVector(float x, float y) {
+        // set an origin
+        mCurrentVector = new UnitVector();
+        mCurrentVector.origin = new com.enuma.drawingcoloring.types.Point();
+        mCurrentVector.origin.x = (int) x;
+        mCurrentVector.origin.y = (int) y;
+        mCurrentVector.angle = null;
+
+        if (mCallback != null) {
+            mCallback.onTouchDownForDrawing();
+        }
+
+    }
+
+    /**
+     * Redraw line from origin to current point
+     * @param x touch.x
+     * @param y touch.y
+     */
+    private void doTouchMoveVector(float x, float y) {
+        // redraw the thing
+        /*mCanvasBuffer.drawLine(
+                mCurrentVector.origin.x, mCurrentVector.origin.y,
+                x, y, new Paint());*/
+
+        double angle = Util.getRadianAngleBetween2Point(
+                mCurrentVector.origin.x, mCurrentVector.origin.y,
+                (int) x, (int) y);
+
+        mCurrentVector.angle = (int) angle;
+
+        mGleaphHolder.drawAngledGleaphFrame(
+                mCurrentVector.origin.x - 100,
+                mCurrentVector.origin.y - 100,
+                180 - (int) Math.toDegrees(angle));
+
+    }
+
+    /**
+     * Add vector to list of vectors
+     * @param x touch.x
+     * @param y touch.y
+     */
+    private void doTouchUpVector(float x, float y) {
+
+        double angle = Util.getRadianAngleBetween2Point(
+                mCurrentVector.origin.x, mCurrentVector.origin.y,
+                (int) x, (int) y);
+
+        if (mCurrentVector.angle != null) {
+            mCurrentVector.angle = (int) angle;
+            mAllVectors.add(mCurrentVector);
+        }
+
+        mGleaphHolder.saveAngledGleaphFrame(
+                mCurrentVector.origin.x - 100,
+                mCurrentVector.origin.y - 100,
+                180 - (int) Math.toDegrees(angle));
+        mCurrentVector = null;
+
     }
 
     public boolean isInit() {

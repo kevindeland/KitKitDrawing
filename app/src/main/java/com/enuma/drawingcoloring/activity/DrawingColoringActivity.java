@@ -28,6 +28,7 @@ import com.enuma.drawingcoloring.activity.base.BaseActivity;
 import com.enuma.drawingcoloring.core.Const;
 import com.enuma.drawingcoloring.dialog.DialogSelectColoringBackground;
 import com.enuma.drawingcoloring.dialog.DialogSelectDrawingBackground;
+import com.enuma.drawingcoloring.types.UnitVector;
 import com.enuma.drawingcoloring.utility.EffectSound;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Preference;
@@ -37,9 +38,11 @@ import com.enuma.drawingcoloring.view.ViewPen;
 import com.enuma.drawingcoloring.view.base.LockableScrollView;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
@@ -80,6 +83,8 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     protected ImageView mIvColoring;
 
     private RelativeLayout mVSupportLayer;
+    private Collection<ImageView> mSupportVectors;
+    private ImageView mCurrentVector;
 
     private ViewPen[] mVPens = new ViewPen[TOTAL_PEN_COLOR_COUNT];
     private ViewPen[] mVSelectedPensEffect = new ViewPen[TOTAL_PEN_COLOR_COUNT];
@@ -319,6 +324,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         mScale = Util.setScale(mThisActivity, findViewById(R.id.layout_root), false);
     }
 
+    @Override
     public void addOneGleaphFrame(int left, int top) {
         // PARALLEL see what happens √√√
         // PARALLEL heck yeah... next make this a method
@@ -331,8 +337,38 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         mVSupportLayer.addView(testFrame);
     }
 
+    @Override
     public void removeAllGleaphFrames() {
         mVSupportLayer.removeAllViews();
+    }
+
+    @Override
+    public void drawAngledGleaphFrame(int left, int top, int angle) {
+        if (mCurrentVector != null) {
+            mVSupportLayer.removeView(mCurrentVector);
+        }
+
+        mCurrentVector = new ImageView(this);
+        mCurrentVector.setImageDrawable(getResources().getDrawable(R.drawable.vector_arrow));
+
+        RelativeLayout.LayoutParams imageParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        imageParams.leftMargin = left;
+        imageParams.topMargin = top;
+        mCurrentVector.setLayoutParams(imageParams);
+
+        mCurrentVector.setRotation(angle);
+        mVSupportLayer.addView(mCurrentVector);
+
+    }
+
+    @Override
+    public void saveAngledGleaphFrame(int left, int top, int angle) {
+        this.drawAngledGleaphFrame(left, top, angle);
+        if (mSupportVectors == null) {
+            mSupportVectors = new ArrayList<ImageView>();
+        }
+        mSupportVectors.add(mCurrentVector);
+        mCurrentVector = null;
     }
 
     private void setNeedSave(boolean bNeedSave) {
