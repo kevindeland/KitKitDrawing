@@ -111,11 +111,15 @@ public class ViewDrawingColoring extends View {
     private MODE mMode = MODE.DRAWING;
     private RADIAL_MODE mRadialMode = RADIAL_MODE.SINGLE;
     private int mCurrentColor;
-    private int mTouchId;
-    private float mTouchOriginX, mTouchOriginY;
     private float mTouchPosX, mTouchPosY;
-    private float mTouchRevX, mTouchRevY;
-    private float[] mTouchAngleX, mTouchAngleY;
+    // an array of the last drawn Points for each radial line...
+    // for example, if we are drawing an 8-arm radial from 0,0... it will progress like:
+    // POS0 = [( x00 = 0, y00 = 0), (0, 0)... ]
+    // with 8 arms, the angle is 360 / 8 = 45...
+    // let's say the distance gone each time is di
+    // POS1 = [( x10 = x00 + d1*cos(0), y10 = d1*sin(0)), ...)
+    // POS2 = [( x20 = x10 + d2*cos(0), y20 = d2*sin(0)), ...)
+    private float[] mTouchRadialPosX, mTouchRadialPosY;
 
 
     // variables for parallel mode
@@ -129,6 +133,8 @@ public class ViewDrawingColoring extends View {
     private VECTOR_MODE mVectorMode = VECTOR_MODE.VECTOR;
     private UnitVector mCurrentVector;
     private ArrayList<UnitVector> mAllVectors = new ArrayList<>();
+    // List of lastDrawn positions for Vectors
+    private ArrayList<com.enuma.drawingcoloring.types.Point> mVectorPositions = new ArrayList<>();
 
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -258,14 +264,8 @@ public class ViewDrawingColoring extends View {
         mTouchPosX = x;
         mTouchPosY = y;
 
-        mTouchOriginX = x;
-        mTouchOriginY = y;
-
-        mTouchRevX =x;
-        mTouchRevY = y;
-
-        mTouchAngleX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
-        mTouchAngleY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
+        mTouchRadialPosX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
+        mTouchRadialPosY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
 
 //        if (mMode == MODE.DRAWING) {
 //            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
@@ -342,15 +342,30 @@ public class ViewDrawingColoring extends View {
                 } else if (mVectorMode == VECTOR_MODE.VECTOR) {
 
                     UnitVector referenceVector = mAllVectors.get(0);
+                    int angleXEnd, angleYEnd;
                     for (int i = 0; i < mAllVectors.size(); i++) {
                         UnitVector localVector = mAllVectors.get(i);
+
+                        angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
+                        angleXEnd = (int) (distance * Math.sin(angleReverse));
+                        angleYEnd = (int) (distance * Math.cos(angleReverse));
 
                         int xOffset = referenceVector.origin.x - localVector.origin.x;
                         int yOffset = referenceVector.origin.y - localVector.origin.y;
 
+                        // for the first time, it's the origin
+                        com.enuma.drawingcoloring.types.Point lastDrawn = mVectorPositions.get(i);
+                        int nextX = lastDrawn.x + angleXEnd;
+                        int nextY = lastDrawn.y + angleYEnd;
+                        //Log.i("VECTOR", "Drawing line from (%f")
                         drawLineWithBrush(mCanvasBuffer,
-                                (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
-                                (int) x - xOffset, (int) y - yOffset);
+                                (int) (lastDrawn.x) , (int) (lastDrawn.y),
+                                (int) (nextX), (int) (nextY));
+
+
+                        mVectorPositions.set(i, new com.enuma.drawingcoloring.types.Point(
+                                nextX, nextY
+                        ));
                     }
                 }
             } else {
@@ -384,11 +399,11 @@ public class ViewDrawingColoring extends View {
                 angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
                 angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
 
-                drawLineWithBrush(mCanvasBuffer, (int) mTouchAngleX[i-1], (int) mTouchAngleY[i-1],
-                        (int) mTouchAngleX[i-1] + angleXEnd, (int) mTouchAngleY[i-1] + angleYEnd);
+                drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
+                        (int) mTouchRadialPosX[i-1] + angleXEnd, (int) mTouchRadialPosY[i-1] + angleYEnd);
 
-                mTouchAngleX[i-1] = mTouchAngleX[i-1] + angleXEnd;
-                mTouchAngleY[i-1] = mTouchAngleY[i-1] + angleYEnd;
+                mTouchRadialPosX[i-1] = mTouchRadialPosX[i-1] + angleXEnd;
+                mTouchRadialPosY[i-1] = mTouchRadialPosY[i-1] + angleYEnd;
             }
         }
     }
@@ -529,6 +544,7 @@ public class ViewDrawingColoring extends View {
         mParallelRootReference = -1;
 
         mAllVectors.clear();
+        mVectorPositions.clear();
     }
 
     public void placeParallelOrigin(Point origin) {
@@ -602,7 +618,7 @@ public class ViewDrawingColoring extends View {
                 placeParallelOrigin(new Point((int) x, (int) y));
                 mGleaphHolder.addOneGleaphFrame((int) x, (int) y);
             }*/
-            doTouchEventVector(action, x, y);
+            doTouchEventPlaceVector(action, x, y);
 
         } else {
 
@@ -642,18 +658,18 @@ public class ViewDrawingColoring extends View {
      * @param x touch.x
      * @param y touch.y
      */
-    private void doTouchEventVector(int action, float x, float y) {
+    private void doTouchEventPlaceVector(int action, float x, float y) {
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                doTouchDownVector(x, y);
+                doTouchDownPlaceVector(x, y);
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                doTouchMoveVector(x, y);
+                doTouchMovePlaceVector(x, y);
                 break;
 
             case MotionEvent.ACTION_UP:
-                doTouchUpVector(x, y);
+                doTouchUpPlaceVector(x, y);
                 break;
         }
     }
@@ -663,12 +679,11 @@ public class ViewDrawingColoring extends View {
      * @param x touch.x
      * @param y touch.y
      */
-    private void doTouchDownVector(float x, float y) {
+    @SuppressLint("DefaultLocale")
+    private void doTouchDownPlaceVector(float x, float y) {
         // set an origin
         mCurrentVector = new UnitVector();
-        mCurrentVector.origin = new com.enuma.drawingcoloring.types.Point();
-        mCurrentVector.origin.x = (int) x;
-        mCurrentVector.origin.y = (int) y;
+        mCurrentVector.origin = new com.enuma.drawingcoloring.types.Point((int) x, (int) y);
         mCurrentVector.angle = null;
 
         if (mCallback != null) {
@@ -682,7 +697,7 @@ public class ViewDrawingColoring extends View {
      * @param x touch.x
      * @param y touch.y
      */
-    private void doTouchMoveVector(float x, float y) {
+    private void doTouchMovePlaceVector(float x, float y) {
         // redraw the thing
         /*mCanvasBuffer.drawLine(
                 mCurrentVector.origin.x, mCurrentVector.origin.y,
@@ -692,7 +707,7 @@ public class ViewDrawingColoring extends View {
                 mCurrentVector.origin.x, mCurrentVector.origin.y,
                 (int) x, (int) y);
 
-        mCurrentVector.angle = (int) angle;
+        mCurrentVector.angle = (int) Math.toDegrees(angle);
 
         mGleaphHolder.drawAngledGleaphFrame(
                 mCurrentVector.origin.x - 100,
@@ -706,14 +721,14 @@ public class ViewDrawingColoring extends View {
      * @param x touch.x
      * @param y touch.y
      */
-    private void doTouchUpVector(float x, float y) {
+    private void doTouchUpPlaceVector(float x, float y) {
 
         double angle = Util.getRadianAngleBetween2Point(
                 mCurrentVector.origin.x, mCurrentVector.origin.y,
                 (int) x, (int) y);
 
         if (mCurrentVector.angle != null) {
-            mCurrentVector.angle = (int) angle;
+            mCurrentVector.angle = (int) Math.toDegrees(angle);
             mAllVectors.add(mCurrentVector);
         }
 
@@ -721,8 +736,10 @@ public class ViewDrawingColoring extends View {
                 mCurrentVector.origin.x - 100,
                 mCurrentVector.origin.y - 100,
                 180 - (int) Math.toDegrees(angle));
-        mCurrentVector = null;
 
+        mVectorPositions.add(mCurrentVector.origin);
+
+        mCurrentVector = null;
     }
 
     public boolean isInit() {
