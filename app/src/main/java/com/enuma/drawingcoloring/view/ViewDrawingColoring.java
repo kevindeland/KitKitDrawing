@@ -277,6 +277,13 @@ public class ViewDrawingColoring extends View {
 
         drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
 
+        if (mParellelMode == PARALLEL_MODE.DRAW && mVectorMode == VECTOR_MODE.VECTOR) {
+            // for all (next)
+            mVectorPositions.add(mCurrentVector.origin); // okay whatever
+            // add mTouchPosX - mCurrentVector.origin.x .... minus the rootVector thingy...
+            // something like that... should figure it all out
+        }
+
         if (mCallback != null) {
             mCallback.onTouchDownForDrawing();
         }
@@ -736,8 +743,6 @@ public class ViewDrawingColoring extends View {
                 mCurrentVector.origin.x - 100,
                 mCurrentVector.origin.y - 100,
                 180 - (int) Math.toDegrees(angle));
-
-        mVectorPositions.add(mCurrentVector.origin);
 
         mCurrentVector = null;
     }
