@@ -20,7 +20,8 @@ import android.view.View;
 
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.GleaphHolder;
-import com.enuma.drawingcoloring.types.UnitVector;
+import com.enuma.drawingcoloring.types.KPoint;
+import com.enuma.drawingcoloring.types.KUnitVector;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
 import com.enuma.drawingcoloring.utility.Util;
@@ -42,21 +43,24 @@ public class ViewDrawingColoring extends View {
         COLORING
     }
 
+    // draw single stroke, or radiate from center
     public enum RADIAL_MODE {
-        SINGLE,
-        RADIAL_2,
-        RADIAL_8
+        SINGLE,     // single stroke
+        RADIAL_2,   // two 180 degree opposites
+        RADIAL_8    // 8 strokes
     }
 
+    // when using parallel mode
     public enum PARALLEL_MODE {
-        DEFAULT,
-        PLACE,
-        DRAW
+        DEFAULT,    // off. Draw normal mode
+        PLACE,      // place anchors
+        DRAW        // draw in parallel
     }
 
+    // when placing parallels...
     public enum VECTOR_MODE {
-        OFF,
-        VECTOR
+        OFF,        // place and draw as a Point
+        VECTOR      // place and draw as a UnitVector
     }
 
     /**
@@ -131,10 +135,10 @@ public class ViewDrawingColoring extends View {
 
     // variables for VectorMode
     private VECTOR_MODE mVectorMode = VECTOR_MODE.VECTOR;
-    private UnitVector mCurrentVector;
-    private ArrayList<UnitVector> mAllVectors = new ArrayList<>();
+    private KUnitVector mCurrentVector;
+    private ArrayList<KUnitVector> mAllVectors = new ArrayList<>();
     // List of lastDrawn positions for Vectors
-    private ArrayList<com.enuma.drawingcoloring.types.Point> mVectorPositions = new ArrayList<>();
+    private ArrayList<KPoint> mVectorPositions = new ArrayList<>();
 
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -348,10 +352,10 @@ public class ViewDrawingColoring extends View {
                     }
                 } else if (mVectorMode == VECTOR_MODE.VECTOR) {
 
-                    UnitVector referenceVector = mAllVectors.get(0);
+                    KUnitVector referenceVector = mAllVectors.get(0);
                     int angleXEnd, angleYEnd;
                     for (int i = 0; i < mAllVectors.size(); i++) {
-                        UnitVector localVector = mAllVectors.get(i);
+                        KUnitVector localVector = mAllVectors.get(i);
 
                         angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
                         angleXEnd = (int) (distance * Math.sin(angleReverse));
@@ -361,7 +365,7 @@ public class ViewDrawingColoring extends View {
                         int yOffset = referenceVector.origin.y - localVector.origin.y;
 
                         // for the first time, it's the origin
-                        com.enuma.drawingcoloring.types.Point lastDrawn = mVectorPositions.get(i);
+                        KPoint lastDrawn = mVectorPositions.get(i);
                         int nextX = lastDrawn.x + angleXEnd;
                         int nextY = lastDrawn.y + angleYEnd;
                         //Log.i("VECTOR", "Drawing line from (%f")
@@ -370,7 +374,7 @@ public class ViewDrawingColoring extends View {
                                 (int) (nextX), (int) (nextY));
 
 
-                        mVectorPositions.set(i, new com.enuma.drawingcoloring.types.Point(
+                        mVectorPositions.set(i, new KPoint(
                                 nextX, nextY
                         ));
                     }
@@ -546,7 +550,7 @@ public class ViewDrawingColoring extends View {
     }
 
     public void resetParallelOrigins() {
-        mParallelPoints = new Point[10];
+        mParallelPoints = new Point[10]; // no reason we should limit this to ten
         mParallelNumPoints = 0;
         mParallelRootReference = -1;
 
@@ -689,8 +693,8 @@ public class ViewDrawingColoring extends View {
     @SuppressLint("DefaultLocale")
     private void doTouchDownPlaceVector(float x, float y) {
         // set an origin
-        mCurrentVector = new UnitVector();
-        mCurrentVector.origin = new com.enuma.drawingcoloring.types.Point((int) x, (int) y);
+        mCurrentVector = new KUnitVector();
+        mCurrentVector.origin = new KPoint((int) x, (int) y);
         mCurrentVector.angle = null;
 
         if (mCallback != null) {

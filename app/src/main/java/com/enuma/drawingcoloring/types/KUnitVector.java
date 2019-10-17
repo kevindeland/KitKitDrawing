@@ -5,8 +5,8 @@ package com.enuma.drawingcoloring.types;
  * <p>A vector of non-specified magnitude. It has an origin and an angle.</p>
  * Created by kevindeland on 2019-10-15.
  */
-public class UnitVector {
+public class KUnitVector {
 
-    public com.enuma.drawingcoloring.types.Point origin;
+    public KPoint origin;
     public Integer angle;
 }
