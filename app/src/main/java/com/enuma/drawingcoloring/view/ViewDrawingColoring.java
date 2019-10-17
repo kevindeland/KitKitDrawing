@@ -38,6 +38,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -806,7 +807,10 @@ public class ViewDrawingColoring extends View {
 
         FileWriter file = null;
         try {
-            file = new FileWriter(Const.SAVE_GLEAPH_PATH + "/sample.json");
+            Calendar calendar = Calendar.getInstance();
+            String TIME_FORMAT = "yyyy-MM-dd-HH-mm-ss";
+            String filename = Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".json";
+            file = new FileWriter(Const.SAVE_GLEAPH_PATH + "/" + filename);
             file.write(writeme);
             file.flush();
             file.close();
@@ -815,27 +819,33 @@ public class ViewDrawingColoring extends View {
         }
     }
 
-    public void loadAndDrawLastJson() {
+    public void loadAndDrawAllSavedJson() {
 
         try {
-            BufferedReader br = new BufferedReader(
-                    new FileReader(Const.SAVE_GLEAPH_PATH + "/sample.json")
-            );
-            List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>(){}.getType());
+            File folder = new File(Const.SAVE_GLEAPH_PATH);
 
-            Log.i("GSON", x.toString());
+            for (final File file : folder.listFiles()) {
+                
+                BufferedReader br = new BufferedReader(
+                        new FileReader(file)
+                );
+                List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>() {
+                }.getType());
 
-            for (KPoint k : x) {
+                Log.i("GSON", x.toString());
 
-                Log.i("GSON", "" + k.x + ", " + k.y );
-            }
+                for (KPoint k : x) {
 
-            for (int i=1; i < x.size(); i++) {
-                KPoint lastPoint = x.get(i-1);
-                KPoint nextPoint = x.get(i);
-                drawLineWithBrush(mCanvasBuffer,
-                        lastPoint.x, lastPoint.y,
-                        nextPoint.x, nextPoint.y);
+                    Log.i("GSON", "" + k.x + ", " + k.y);
+                }
+
+                for (int i = 1; i < x.size(); i++) {
+                    KPoint lastPoint = x.get(i - 1);
+                    KPoint nextPoint = x.get(i);
+                    drawLineWithBrush(mCanvasBuffer,
+                            lastPoint.x, lastPoint.y,
+                            nextPoint.x, nextPoint.y);
+                }
             }
 
         } catch (FileNotFoundException e) {

@@ -227,7 +227,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         findViewById(R.id.v_load_last).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mVDrawingColoring.loadAndDrawLastJson();
+                mVDrawingColoring.loadAndDrawAllSavedJson();
             }
         });
 
