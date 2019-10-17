@@ -210,6 +210,27 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         mVChangeBg = (ImageView) findViewById(R.id.v_bg);
         mVChangeBg.setOnClickListener(mOnClickListener);
 
+        findViewById(R.id.v_paste_last).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVDrawingColoring.pasteLastPathFiftyPixelsToTheRight();
+            }
+        });
+
+        findViewById(R.id.v_save_last).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVDrawingColoring.saveLastPathAsJson();
+            }
+        });
+
+        findViewById(R.id.v_load_last).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVDrawingColoring.loadAndDrawLastJson();
+            }
+        });
+
         // RADIAL
         mVChangeMode = (ImageView) findViewById(R.id.v_mode);
         mVChangeMode.setOnClickListener(mOnClickListener);

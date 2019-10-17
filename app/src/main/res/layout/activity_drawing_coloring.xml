@@ -6,7 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/drawingpad_background"
-    tools:context=".activity.DrawingColoringActivity">
+    tools:context=".activity.DrawingColoringActivity"
+    tools:ignore="GradleDependency">
 
     <ImageView
         android:id="@+id/v_back"
@@ -58,6 +59,39 @@
         android:src="@drawable/selector_parallel_off"
         app:layout_constraintLeft_toRightOf="@id/v_mode"
         app:layout_constraintTop_toTopOf="parent"
+        />
+
+    <Button
+        android:id="@+id/v_paste_last"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="80px"
+        android:layout_marginTop="48px"
+        app:layout_constraintLeft_toRightOf="@id/v_parallel"
+        app:layout_constraintTop_toTopOf="parent"
+        android:text="paste last"
+        />
+
+    <Button
+        android:id="@+id/v_save_last"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="80px"
+        android:layout_marginTop="48px"
+        app:layout_constraintLeft_toRightOf="@id/v_paste_last"
+        app:layout_constraintTop_toTopOf="parent"
+        android:text="save last"
+        />
+
+    <Button
+        android:id="@+id/v_load_last"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="80px"
+        android:layout_marginTop="48px"
+        app:layout_constraintLeft_toRightOf="@id/v_save_last"
+        app:layout_constraintTop_toTopOf="parent"
+        android:text="load last"
         />
 
     <com.enuma.drawingcoloring.view.base.LockableScrollView

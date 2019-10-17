@@ -20,14 +20,25 @@ import android.view.View;
 
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.GleaphHolder;
+import com.enuma.drawingcoloring.core.Const;
 import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.types.KUnitVector;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
 import com.enuma.drawingcoloring.utility.Util;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import org.json.JSONArray;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * MODE.DRAWING : 크레용 질감 표현 (Brush Image (5 * 2) 이용)
@@ -36,6 +47,10 @@ import java.util.ArrayList;
  */
 public class ViewDrawingColoring extends View {
 
+
+    private List<KPoint> ___lastPointPath;
+    private int ___lastPointCounter = 0;
+    private Gson _gson = new Gson();
     ////////////////////////////////////////////////////////////////////////////////
 
     public enum MODE {
@@ -265,6 +280,11 @@ public class ViewDrawingColoring extends View {
 
 
     private void doTouchDownBrush(float x, float y) {
+
+        ___lastPointPath = new ArrayList<>();
+        ___lastPointCounter = 0;
+        ___lastPointPath.add(new KPoint((int) x, (int) y));
+
         mTouchPosX = x;
         mTouchPosY = y;
 
@@ -329,6 +349,8 @@ public class ViewDrawingColoring extends View {
 //                mPathColoring.quadTo(mTouchPosX, mTouchPosY, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
 //
 //            }
+
+            ___lastPointPath.add(new KPoint((int) x, (int) y));
 
             Log.v(LINE_TAG, String.format("Drawing from [%d, %d] to [%d, %d]",
                     (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
@@ -739,6 +761,7 @@ public class ViewDrawingColoring extends View {
                 (int) x, (int) y);
 
         if (mCurrentVector.angle != null) {
+
             mCurrentVector.angle = (int) Math.toDegrees(angle);
             mAllVectors.add(mCurrentVector);
         }
@@ -758,5 +781,65 @@ public class ViewDrawingColoring extends View {
 
     public interface Callback {
         void onTouchDownForDrawing();
+    }
+
+    public void pasteLastPathFiftyPixelsToTheRight() {
+
+        for(int i=1; i < ___lastPointPath.size(); i++) {
+            KPoint lastPoint = ___lastPointPath.get(i-1);
+            KPoint nextPoint = ___lastPointPath.get(i);
+
+            int offsetRight = 100 * (___lastPointCounter + 1);
+            drawLineWithBrush(mCanvasBuffer,
+                    lastPoint.x + offsetRight, lastPoint.y,
+                    nextPoint.x + offsetRight, nextPoint.y);
+        }
+
+        ___lastPointCounter++;
+    }
+
+    public void saveLastPathAsJson() {
+
+        String writeme = _gson.toJson(___lastPointPath);
+        Log.i("JSON", writeme);
+        // SAVE ME
+
+        FileWriter file = null;
+        try {
+            file = new FileWriter(Const.SAVE_GLEAPH_PATH + "/sample.json");
+            file.write(writeme);
+            file.flush();
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadAndDrawLastJson() {
+
+        try {
+            BufferedReader br = new BufferedReader(
+                    new FileReader(Const.SAVE_GLEAPH_PATH + "/sample.json")
+            );
+            List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>(){}.getType());
+
+            Log.i("GSON", x.toString());
+
+            for (KPoint k : x) {
+
+                Log.i("GSON", "" + k.x + ", " + k.y );
+            }
+
+            for (int i=1; i < x.size(); i++) {
+                KPoint lastPoint = x.get(i-1);
+                KPoint nextPoint = x.get(i);
+                drawLineWithBrush(mCanvasBuffer,
+                        lastPoint.x, lastPoint.y,
+                        nextPoint.x, nextPoint.y);
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }

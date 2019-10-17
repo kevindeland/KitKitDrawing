@@ -16,6 +16,9 @@ public class Const {
     public static final String FILENAME_TEMP_DRAWING = "temp_drawing.png";
     public static final String FILENAME_TEMP_COLORING = "temp_coloring.png";
 
+
+    public static final String SAVE_GLEAPH_PATH = Environment.getExternalStorageDirectory() + "/" + "Gleaphs";
+
     ////////////////////////////////////////////////////////////////////////////////
 
     public static int LCD_GROUP = -1;
