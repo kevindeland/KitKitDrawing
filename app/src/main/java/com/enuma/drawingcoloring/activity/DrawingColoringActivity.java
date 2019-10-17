@@ -32,6 +32,7 @@ import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Preference;
 import com.enuma.drawingcoloring.utility.Util;
 import com.enuma.drawingcoloring.view.ViewDrawingColoring;
+import com.enuma.drawingcoloring.view.ViewGleaphDisplay;
 import com.enuma.drawingcoloring.view.ViewPen;
 import com.enuma.drawingcoloring.view.base.LockableScrollView;
 
@@ -77,6 +78,8 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     protected ImageView mVChangeParallel;
     private ViewGroup mLayoutDrawing;
     private ViewDrawingColoring mVDrawingColoring;
+
+    private ViewGleaphDisplay mVGleaphDisplay;
     protected ImageView mIvColoring;
 
     private RelativeLayout mVSupportLayer;
@@ -227,7 +230,8 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         findViewById(R.id.v_load_last).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mVDrawingColoring.loadAndDrawAllSavedJson();
+                //mVDrawingColoring.loadAndDrawAllSavedJson();
+                mVGleaphDisplay.loadJsonGleaphIntoMe();
             }
         });
 
@@ -246,6 +250,10 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         mVDrawingColoring = (ViewDrawingColoring) findViewById(R.id.v_drawing_coloring);
         mVDrawingColoring.setCallback(mViewDrawingCoCallback);
         mVDrawingColoring.setGleaphHolder(this);
+
+        mVGleaphDisplay = (ViewGleaphDisplay) findViewById(R.id.v_gleaph_display);
+
+
         mIvColoring = (ImageView) findViewById(R.id.iv_coloring);
         mVSupportLayer = (RelativeLayout) findViewById(R.id.v_support_layer);
 
