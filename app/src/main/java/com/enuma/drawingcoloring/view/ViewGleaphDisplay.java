@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -186,26 +187,64 @@ public class ViewGleaphDisplay extends View {
 
             for (final File file : folder.listFiles()) {
 
-                BufferedReader br = new BufferedReader(
-                        new FileReader(file)
-                );
-                List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>() {
-                }.getType());
-
-                Log.i("DRAWME", "drawing " + x.size() + " for " + x.toString());
-
-                for (int i = 1; i < x.size(); i++) {
-                    Log.v("DRAWME", "Drawing a thing");
-                    KPoint lastPoint = x.get(i - 1);
-                    KPoint nextPoint = x.get(i);
-                    drawLineWithBrush(mCanvasBuffer,
-                            lastPoint.x, lastPoint.y,
-                            nextPoint.x, nextPoint.y);
-                }
+                loadJsonGleaphIntoMe(file);
             }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    public void loadJsonGleaphIntoMe(File file) throws FileNotFoundException {
+        BufferedReader br = new BufferedReader(
+                new FileReader(file)
+        );
+        List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>() {
+        }.getType());
+
+        List<KPoint> newList = scaleGleaphToZero(x);
+
+        Log.i("DRAWME", "drawing " + x.size() + " for " + x.toString());
+
+        for (int i = 1; i < newList.size(); i++) {
+            Log.v("DRAWME", "Drawing a thing");
+            KPoint lastPoint = newList.get(i - 1);
+            KPoint nextPoint = newList.get(i);
+            drawLineWithBrush(mCanvasBuffer,
+                    lastPoint.x, lastPoint.y,
+                    nextPoint.x, nextPoint.y);
+        }
+    }
+
+    private List<KPoint> scaleGleaphToZero(List<KPoint> gleaph) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
+        int maxX = 0, maxY = 0;
+
+        for (KPoint point : gleaph) {
+            if (point.x < minX) {
+                minX = point.x;
+            }
+            if (point.y < minY) {
+                minY = point.y;
+            }
+
+            if (point.x > maxX) {
+                maxX = point.x;
+            }
+            if (point.y > maxY) {
+                maxY = point.y;
+            }
+        }
+
+        int X_DIFF = maxX - minX;
+        int Y_DIFF = maxY - minY;
+
+
+        List<KPoint> newList = new ArrayList<>();
+        for (KPoint point : gleaph) {
+            newList.add(new KPoint(point.x - minX, point.y - minY));
+        }
+
+        return newList;
     }
 }
