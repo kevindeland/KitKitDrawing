@@ -84,14 +84,14 @@
         />
 
     <Button
-        android:id="@+id/v_load_last"
+        android:id="@+id/v_gallery"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="80px"
         android:layout_marginTop="48px"
         app:layout_constraintLeft_toRightOf="@id/v_save_last"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="load all"
+        android:text="gallery"
         />
 
     <com.enuma.drawingcoloring.view.base.LockableScrollView

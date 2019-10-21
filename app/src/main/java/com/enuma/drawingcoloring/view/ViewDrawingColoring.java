@@ -14,6 +14,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.support.annotation.Nullable;
+import android.text.method.Touch;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,8 +30,6 @@ import com.enuma.drawingcoloring.utility.Misc;
 import com.enuma.drawingcoloring.utility.Util;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import org.json.JSONArray;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -54,6 +53,7 @@ public class ViewDrawingColoring extends View {
     private KPath ___lastPointPath;
     private int ___lastPointCounter = 0;
     private Gson _gson = new Gson();
+
     ////////////////////////////////////////////////////////////////////////////////
 
     public enum MODE {
@@ -77,7 +77,7 @@ public class ViewDrawingColoring extends View {
 
     // when placing parallels...
     public enum VECTOR_MODE {
-        OFF,        // place and draw as a Point
+        JUST_TRANSLATE,        // place and draw as a Point
         VECTOR      // place and draw as a UnitVector
     }
 
@@ -152,7 +152,7 @@ public class ViewDrawingColoring extends View {
 
 
     // variables for VectorMode
-    private VECTOR_MODE mVectorMode = VECTOR_MODE.VECTOR;
+    private VECTOR_MODE mVectorMode = VECTOR_MODE.JUST_TRANSLATE;
     private KUnitVector mCurrentVector;
     private ArrayList<KUnitVector> mAllVectors = new ArrayList<>();
     // List of lastDrawn positions for Vectors
@@ -464,7 +464,12 @@ public class ViewDrawingColoring extends View {
 
         // when placing, do this thing
         if (getParellelMode() == PARALLEL_MODE.PLACE) {
-            mPlaceVectorTouchListener.doTouchEvent(action, x, y);
+
+            if (mVectorMode == VECTOR_MODE.VECTOR)
+                mPlaceVectorTouchListener.doTouchEvent(action, x, y);
+            else if (mVectorMode == VECTOR_MODE.JUST_TRANSLATE) {
+                mPlacePointTouchListener.doTouchEvent(action, x, y);
+            }
 
         } else {
 
@@ -585,7 +590,7 @@ public class ViewDrawingColoring extends View {
                 if (mParellelMode == PARALLEL_MODE.DRAW) {
 
                     switch (mVectorMode) {
-                        case OFF:
+                        case JUST_TRANSLATE:
                             Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
                             Point referenceOrigin = mParallelPoints[mParallelRootReference];
                             for (int i = 0; i < mParallelNumPoints; i++) {
@@ -753,6 +758,27 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    private PlacePointTouchEventListener mPlacePointTouchListener = new PlacePointTouchEventListener();
+
+    class PlacePointTouchEventListener extends TouchEventListener {
+
+        @Override
+        void doTouchDown(float x, float y) {
+            // do nothing
+        }
+
+        @Override
+        void doTouchMove(float x, float y) {
+            // do nothing
+        }
+
+        @Override
+        void doTouchUp(float x, float y) {
+            placeParallelOrigin(new Point((int) x, (int) y));
+            mGleaphHolder.addOneGleaphFrame((int) x, (int) y);
+        }
+    }
+
     public boolean isInit() {
         return mbInit;
     }
@@ -760,6 +786,30 @@ public class ViewDrawingColoring extends View {
 
     public interface Callback {
         void onTouchDownForDrawing();
+    }
+
+
+    /**
+     * Should only be called after PLACE mode.
+     * the path will be inserted at every parallel point
+     * @param path
+     */
+    public void insertMassGleaph(List<KPoint> path) {
+        for (int i=0; i < mParallelNumPoints; i++) {
+
+            int offsetX = mParallelPoints[i].x;
+            int offsetY = mParallelPoints[i].y;
+
+            for (int j=1; j < path.size(); j++) {
+                KPoint lastPoint = path.get(j-1);
+                KPoint nextPoint = path.get(j);
+                drawLineWithBrush(mCanvasBuffer,
+                        lastPoint.x + offsetX,lastPoint.y + offsetY,
+                        nextPoint.x + offsetX, nextPoint.y + offsetY);
+            }
+
+
+        }
     }
 
     /**

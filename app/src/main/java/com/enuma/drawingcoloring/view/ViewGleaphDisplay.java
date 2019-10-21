@@ -56,6 +56,8 @@ public class ViewGleaphDisplay extends View {
     private Rect mRect = new Rect();
     private boolean mbInit = false;
 
+    List<KPoint> mPath;
+
 
     /**
      * Brush 이미지의 수평 갯수
@@ -202,7 +204,9 @@ public class ViewGleaphDisplay extends View {
         List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>() {
         }.getType());
 
+
         List<KPoint> newList = scaleGleaphToZero(x);
+        mPath = newList;
 
         Log.i("DRAWME", "drawing " + x.size() + " for " + x.toString());
 
@@ -214,6 +218,10 @@ public class ViewGleaphDisplay extends View {
                     lastPoint.x, lastPoint.y,
                     nextPoint.x, nextPoint.y);
         }
+    }
+
+    public List<KPoint> getPath() {
+        return mPath;
     }
 
     private List<KPoint> scaleGleaphToZero(List<KPoint> gleaph) {

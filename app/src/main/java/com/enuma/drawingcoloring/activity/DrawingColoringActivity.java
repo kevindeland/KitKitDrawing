@@ -1,6 +1,7 @@
 package com.enuma.drawingcoloring.activity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -27,6 +28,8 @@ import com.enuma.drawingcoloring.activity.base.BaseActivity;
 import com.enuma.drawingcoloring.core.Const;
 import com.enuma.drawingcoloring.dialog.DialogSelectColoringBackground;
 import com.enuma.drawingcoloring.dialog.DialogSelectDrawingBackground;
+import com.enuma.drawingcoloring.types.KPath;
+import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.utility.EffectSound;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Preference;
@@ -35,6 +38,8 @@ import com.enuma.drawingcoloring.view.ViewDrawingColoring;
 import com.enuma.drawingcoloring.view.ViewGleaphDisplay;
 import com.enuma.drawingcoloring.view.ViewPen;
 import com.enuma.drawingcoloring.view.base.LockableScrollView;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,6 +48,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import static com.enuma.drawingcoloring.view.ViewDrawingColoring.PARALLEL_MODE.DEFAULT;
@@ -54,6 +60,7 @@ import static com.enuma.drawingcoloring.view.ViewDrawingColoring.RADIAL_MODE.SIN
 
 public class DrawingColoringActivity extends BaseActivity implements GleaphHolder {
 
+    private Gson _gson = new Gson();
     ////////////////////////////////////////////////////////////////////////////////
 
     private final int TOTAL_PEN_COLOR_COUNT = 18;
@@ -80,6 +87,8 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     private ViewDrawingColoring mVDrawingColoring;
 
     protected ImageView mIvColoring;
+
+    private KPath mInsertGleaph;
 
     private ViewPen[] mVPens = new ViewPen[TOTAL_PEN_COLOR_COUNT];
     private ViewPen[] mVSelectedPensEffect = new ViewPen[TOTAL_PEN_COLOR_COUNT];
@@ -151,6 +160,11 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     protected void onResume() {
         super.onResume();
         getUser();
+
+        /*if (mInsertGleaph != null) {
+            mVDrawingColoring.insertMassGleaph(mInsertGleaph);
+            mInsertGleaph = null;
+        }*/
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -231,13 +245,17 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         });
 
         // nothing right now
-        findViewById(R.id.v_load_last).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.v_gallery).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //mVDrawingColoring.loadAndDrawAllSavedJson();
-                Log.e("FIXME", "Moved to new Activity");
+                Intent intent = new Intent(mThisActivity, GleaphGalleryActivity.class);
+                startActivityForResult(intent, Const.REQUEST_GLEAPH_CODE);
+                // TODO somehow wait for a selected Gleaph and load it into parallel things
+
             }
         });
+
         //////////////////////
 
         // change RADIAL modes
@@ -359,6 +377,20 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         mIvSaveEffect = (ImageView) findViewById(R.id.iv_save_effect);
 
         mScale = Util.setScale(mThisActivity, findViewById(R.id.layout_root), false);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        Log.i("XYZ", "onActivityResult");
+        String xyz = data.getStringExtra("GLEAPH");
+        Log.i("XYZ", xyz);
+        List<KPoint> x = _gson.fromJson(xyz, new TypeToken<List<KPoint>>() {
+        }.getType());
+
+        // TODO place things...
+        mVDrawingColoring.insertMassGleaph(x);
+
     }
 
     ////////////////////////////////////

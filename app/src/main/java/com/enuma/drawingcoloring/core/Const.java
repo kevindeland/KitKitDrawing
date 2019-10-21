@@ -11,6 +11,7 @@ public class Const {
     public static final String COLORING_IMAGE_PATH_FROM_ASSETS = "coloring";
 
     public static final String SAVE_PATH = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
+    public static final int REQUEST_GLEAPH_CODE = 13;
 
     public static String FOLDER_TEMP = "";
     public static final String FILENAME_TEMP_DRAWING = "temp_drawing.png";
