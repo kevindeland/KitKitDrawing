@@ -21,6 +21,7 @@ import android.view.View;
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.GleaphHolder;
 import com.enuma.drawingcoloring.core.Const;
+import com.enuma.drawingcoloring.types.KPath;
 import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.types.KUnitVector;
 import com.enuma.drawingcoloring.utility.Log;
@@ -49,7 +50,8 @@ import java.util.List;
 public class ViewDrawingColoring extends View {
 
 
-    private List<KPoint> ___lastPointPath;
+    // the path of last points drawn
+    private KPath ___lastPointPath;
     private int ___lastPointCounter = 0;
     private Gson _gson = new Gson();
     ////////////////////////////////////////////////////////////////////////////////
@@ -279,187 +281,6 @@ public class ViewDrawingColoring extends View {
 
     ////////////////////////////////////////////////////////////////////////////////
 
-
-    private void doTouchDownBrush(float x, float y) {
-
-        ___lastPointPath = new ArrayList<>();
-        ___lastPointCounter = 0;
-        ___lastPointPath.add(new KPoint((int) x, (int) y));
-
-        mTouchPosX = x;
-        mTouchPosY = y;
-
-        mTouchRadialPosX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
-        mTouchRadialPosY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
-
-//        if (mMode == MODE.DRAWING) {
-//            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
-//
-//        } else {
-//            mPathColoring.moveTo(mTouchPosX, mTouchPosY);
-//
-//        }
-
-        drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
-
-        if (mParellelMode == PARALLEL_MODE.DRAW && mVectorMode == VECTOR_MODE.VECTOR) {
-            // for all (next)
-            mVectorPositions.add(mCurrentVector.origin); // okay whatever
-            // add mTouchPosX - mCurrentVector.origin.x .... minus the rootVector thingy...
-            // something like that... should figure it all out
-        }
-
-        if (mCallback != null) {
-            mCallback.onTouchDownForDrawing();
-        }
-    }
-
-    @SuppressLint("DefaultLocale")
-    private void doTouchMoveBrush(float x, float y) {
-        if (mTouchPosX == Float.MIN_VALUE || mTouchPosY == Float.MIN_VALUE) {
-            return;
-        }
-
-        String LINE_TAG = "WALK_LINE";
-
-        float vdx = Math.abs(x - mTouchPosX); // how much x has changed since last event
-        float vdy = Math.abs(y - mTouchPosY); // how much y has changed since last event
-
-        float dx = x - mTouchPosX; // need these for symmetry
-        float dy = y - mTouchPosY;
-
-        double distance = Util.getDistanceBetween2Point((int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
-        double angle = Util.getRadianAngleBetween2Point((int) (mTouchPosX * 1000),
-                (int) (mTouchPosY * 1000), (int) (x * 1000), (int) (y * 1000));
-        double angleReverse = angle - Math.toRadians(180);
-
-        // This was useful for debugging
-        Log.v(LINE_TAG, String.format("Ø=%f; dx=%f; dy=%f; rcosØ=%f; rsinØ=%f", angle, dx, dy, distance*Math.sin(angle), distance*Math.cos(angle)));
-        Log.v(LINE_TAG, String.format("mTouchPosX=%f; mTouchPosY=%f; x=%f; y=%f", mTouchPosX, mTouchPosY, x, y));
-        Log.v(LINE_TAG, String.format("dx=%f; dy=%f", dx, dy));
-        Log.v(LINE_TAG, String.format("Ø=%f, -dx=%f; -dy=%f; rcos(Ø-180)=%f; rsin(Ø-180)=%f", angleReverse, -dx, -dy,
-                distance*Math.sin(angleReverse), distance*Math.cos(angleReverse)));
-
-
-        if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
-
-//            if (mMode == MODE.DRAWING) {
-//                drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
-//
-//            } else {
-//                mPathColoring.quadTo(mTouchPosX, mTouchPosY, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
-//
-//            }
-
-            ___lastPointPath.add(new KPoint((int) x, (int) y));
-
-            Log.v(LINE_TAG, String.format("Drawing from [%d, %d] to [%d, %d]",
-                    (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
-
-
-            if (mParellelMode == PARALLEL_MODE.DRAW) {
-
-                if (mVectorMode == VECTOR_MODE.OFF) {
-                    Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
-                    Point referenceOrigin = mParallelPoints[mParallelRootReference];
-                    for (int i = 0; i < mParallelNumPoints; i++) {
-                        Point localOrigin = mParallelPoints[i];
-                        Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
-
-                        int xOffset = referenceOrigin.x - localOrigin.x;
-                        int yOffset = referenceOrigin.y - localOrigin.y;
-
-                        drawLineWithBrush(mCanvasBuffer,
-                                (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
-                                (int) x - xOffset, (int) y - yOffset);
-                    }
-                } else if (mVectorMode == VECTOR_MODE.VECTOR) {
-
-                    KUnitVector referenceVector = mAllVectors.get(0);
-                    int angleXEnd, angleYEnd;
-                    for (int i = 0; i < mAllVectors.size(); i++) {
-                        KUnitVector localVector = mAllVectors.get(i);
-
-                        angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
-                        angleXEnd = (int) (distance * Math.sin(angleReverse));
-                        angleYEnd = (int) (distance * Math.cos(angleReverse));
-
-                        int xOffset = referenceVector.origin.x - localVector.origin.x;
-                        int yOffset = referenceVector.origin.y - localVector.origin.y;
-
-                        // for the first time, it's the origin
-                        KPoint lastDrawn = mVectorPositions.get(i);
-                        int nextX = lastDrawn.x + angleXEnd;
-                        int nextY = lastDrawn.y + angleYEnd;
-                        //Log.i("VECTOR", "Drawing line from (%f")
-                        drawLineWithBrush(mCanvasBuffer,
-                                (int) (lastDrawn.x) , (int) (lastDrawn.y),
-                                (int) (nextX), (int) (nextY));
-
-
-                        mVectorPositions.set(i, new KPoint(
-                                nextX, nextY
-                        ));
-                    }
-                }
-            } else {
-                // only draw one
-                drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
-            }
-
-            mTouchPosX = x;
-            mTouchPosY = y;
-
-            int NUM_ANGLES = 3;
-
-            switch(getRadialMode()) {
-                case SINGLE:
-                    return; // don't do extra drawing... this could be refactored
-
-                case RADIAL_2:
-                    NUM_ANGLES = 2;
-                    break;
-
-                case RADIAL_8:
-                    NUM_ANGLES = 8;
-            }
-
-            // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
-            int angleDivisor = 360 / NUM_ANGLES;
-            int angleXEnd, angleYEnd;
-            for (int i=1; i<NUM_ANGLES; i++) {
-                angleReverse = angle - Math.toRadians(i* angleDivisor);
-                Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
-                angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
-                angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
-
-                drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
-                        (int) mTouchRadialPosX[i-1] + angleXEnd, (int) mTouchRadialPosY[i-1] + angleYEnd);
-
-                mTouchRadialPosX[i-1] = mTouchRadialPosX[i-1] + angleXEnd;
-                mTouchRadialPosY[i-1] = mTouchRadialPosY[i-1] + angleYEnd;
-            }
-        }
-    }
-
-    private void doTouchUpBrush(float x, float y) {
-//        if (mMode == MODE.COLORING) {
-//            if (x == mTouchPosX && y == mTouchPosY) {
-//                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2 + 1, (y + mTouchPosY) / 2 + 1);
-//
-//            } else {
-//                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
-//
-//            }
-//
-//            mCanvasBuffer.drawPath(mPathColoring, mPaintColoring);
-//            mPathColoring.reset();
-//        }
-
-        mTouchPosX = Float.MIN_VALUE;
-        mTouchPosY = Float.MIN_VALUE;
-    }
-
     /**
      * Random 한 Brush Point Image
      *
@@ -643,20 +464,11 @@ public class ViewDrawingColoring extends View {
 
         // when placing, do this thing
         if (getParellelMode() == PARALLEL_MODE.PLACE) {
-            // PARALLEL next --- do this!!! place Vectors instead of points
-            // follow the logic in the SupportLayer...
-            // -- onDown, start a new one
-            // -- onMove, redraw
-            // -- onUp, add to the list
-            /*if (action == MotionEvent.ACTION_UP) {
-                placeParallelOrigin(new Point((int) x, (int) y));
-                mGleaphHolder.addOneGleaphFrame((int) x, (int) y);
-            }*/
-            doTouchEventPlaceVector(action, x, y);
+            mPlaceVectorTouchListener.doTouchEvent(action, x, y);
 
         } else {
 
-            doTouchEventBrush(action, x, y);
+            mBrushTouchListener.doTouchEvent(action, x, y);
 
             if (isInvalidate) {
                 invalidate();
@@ -664,115 +476,281 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    private abstract class TouchEventListener {
+        void doTouchEvent(int action, float x, float y) {
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    doTouchDown(x, y);
+                    break;
+
+                case MotionEvent.ACTION_MOVE:
+                    doTouchMove(x, y);
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    doTouchUp(x, y);
+                    break;
+            }
+        }
+        abstract void doTouchDown(float x, float y);
+        abstract void doTouchMove(float x, float y);
+        abstract void doTouchUp(float x, float y);
+    }
+
+    private BrushTouchEventListener mBrushTouchListener = new BrushTouchEventListener();
+
     /**
-     *
-     * @param action
-     * @param x
-     * @param y
+     * How does a Touch happen when you're in Brush mode???
      */
-    private void doTouchEventBrush(int action, float x, float y) {
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-                doTouchDownBrush(x, y);
-                break;
+    class BrushTouchEventListener extends TouchEventListener {
 
-            case MotionEvent.ACTION_MOVE:
-                doTouchMoveBrush(x, y);
-                break;
+        @Override
+        public void doTouchDown(float x, float y) {
+            ___lastPointPath = new KPath();
+            ___lastPointCounter = 0;
+            ___lastPointPath.addPoint(new KPoint((int) x, (int) y));
 
-            case MotionEvent.ACTION_UP:
-                doTouchUpBrush(x, y);
-                break;
+            mTouchPosX = x;
+            mTouchPosY = y;
+
+            mTouchRadialPosX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
+            mTouchRadialPosY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
+
+//        if (mMode == MODE.DRAWING) {
+//            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
+//
+//        } else {
+//            mPathColoring.moveTo(mTouchPosX, mTouchPosY);
+//
+//        }
+
+            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
+
+            if (mParellelMode == PARALLEL_MODE.DRAW && mVectorMode == VECTOR_MODE.VECTOR) {
+                // for all (next)
+                mVectorPositions.add(mCurrentVector.origin); // okay whatever
+                // add mTouchPosX - mCurrentVector.origin.x .... minus the rootVector thingy...
+                // something like that... should figure it all out
+            }
+
+            if (mCallback != null) {
+                mCallback.onTouchDownForDrawing();
+            }
+        }
+
+        @SuppressLint("DefaultLocale")
+        @Override
+        public void doTouchMove(float x, float y) {
+            if (mTouchPosX == Float.MIN_VALUE || mTouchPosY == Float.MIN_VALUE) {
+                return;
+            }
+
+            String LINE_TAG = "WALK_LINE";
+
+            float vdx = Math.abs(x - mTouchPosX); // how much x has changed since last event
+            float vdy = Math.abs(y - mTouchPosY); // how much y has changed since last event
+
+            float dx = x - mTouchPosX; // need these for symmetry
+            float dy = y - mTouchPosY;
+
+            double distance = Util.getDistanceBetween2Point((int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+            double angle = Util.getRadianAngleBetween2Point((int) (mTouchPosX * 1000),
+                    (int) (mTouchPosY * 1000), (int) (x * 1000), (int) (y * 1000));
+            double angleReverse = angle - Math.toRadians(180);
+
+            // This was useful for debugging
+            Log.v(LINE_TAG, String.format("Ø=%f; dx=%f; dy=%f; rcosØ=%f; rsinØ=%f", angle, dx, dy, distance*Math.sin(angle), distance*Math.cos(angle)));
+            Log.v(LINE_TAG, String.format("mTouchPosX=%f; mTouchPosY=%f; x=%f; y=%f", mTouchPosX, mTouchPosY, x, y));
+            Log.v(LINE_TAG, String.format("dx=%f; dy=%f", dx, dy));
+            Log.v(LINE_TAG, String.format("Ø=%f, -dx=%f; -dy=%f; rcos(Ø-180)=%f; rsin(Ø-180)=%f", angleReverse, -dx, -dy,
+                    distance*Math.sin(angleReverse), distance*Math.cos(angleReverse)));
+
+
+            if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
+
+//            if (mMode == MODE.DRAWING) {
+//                drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+//
+//            } else {
+//                mPathColoring.quadTo(mTouchPosX, mTouchPosY, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
+//
+//            }
+
+                ___lastPointPath.addPoint(new KPoint((int) x, (int) y));
+
+                Log.v(LINE_TAG, String.format("Drawing from [%d, %d] to [%d, %d]",
+                        (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y));
+
+
+                if (mParellelMode == PARALLEL_MODE.DRAW) {
+
+                    switch (mVectorMode) {
+                        case OFF:
+                            Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
+                            Point referenceOrigin = mParallelPoints[mParallelRootReference];
+                            for (int i = 0; i < mParallelNumPoints; i++) {
+                                Point localOrigin = mParallelPoints[i];
+                                Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
+
+                                int xOffset = referenceOrigin.x - localOrigin.x;
+                                int yOffset = referenceOrigin.y - localOrigin.y;
+
+                                drawLineWithBrush(mCanvasBuffer,
+                                        (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
+                                        (int) x - xOffset, (int) y - yOffset);
+                            }
+                            break;
+
+                        case VECTOR:
+                            KUnitVector referenceVector = mAllVectors.get(0);
+                            int angleXEnd, angleYEnd;
+                            for (int i = 0; i < mAllVectors.size(); i++) {
+                                KUnitVector localVector = mAllVectors.get(i);
+
+                                angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
+                                angleXEnd = (int) (distance * Math.sin(angleReverse));
+                                angleYEnd = (int) (distance * Math.cos(angleReverse));
+
+                                int xOffset = referenceVector.origin.x - localVector.origin.x;
+                                int yOffset = referenceVector.origin.y - localVector.origin.y;
+
+                                // for the first time, it's the origin
+                                KPoint lastDrawn = mVectorPositions.get(i);
+                                int nextX = lastDrawn.x + angleXEnd;
+                                int nextY = lastDrawn.y + angleYEnd;
+                                //Log.i("VECTOR", "Drawing line from (%f")
+                                drawLineWithBrush(mCanvasBuffer,
+                                        (int) (lastDrawn.x) , (int) (lastDrawn.y),
+                                        (int) (nextX), (int) (nextY));
+
+
+                                mVectorPositions.set(i, new KPoint(
+                                        nextX, nextY
+                                ));
+                            }
+                            break;
+
+                    }
+                } else {
+                    // only draw one
+                    drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+                }
+
+                mTouchPosX = x;
+                mTouchPosY = y;
+
+                int NUM_ANGLES = 3;
+
+                switch(getRadialMode()) {
+                    case SINGLE:
+                        return; // don't do extra drawing... this could be refactored
+
+                    case RADIAL_2:
+                        NUM_ANGLES = 2;
+                        break;
+
+                    case RADIAL_8:
+                        NUM_ANGLES = 8;
+                }
+
+                // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
+                int angleDivisor = 360 / NUM_ANGLES;
+                int angleXEnd, angleYEnd;
+                for (int i=1; i<NUM_ANGLES; i++) {
+                    angleReverse = angle - Math.toRadians(i* angleDivisor);
+                    Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
+                    angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
+                    angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
+
+                    drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
+                            (int) mTouchRadialPosX[i-1] + angleXEnd, (int) mTouchRadialPosY[i-1] + angleYEnd);
+
+                    mTouchRadialPosX[i-1] = mTouchRadialPosX[i-1] + angleXEnd;
+                    mTouchRadialPosY[i-1] = mTouchRadialPosY[i-1] + angleYEnd;
+                }
+            }
+
+        }
+
+        @Override
+        public void doTouchUp(float x, float y) {
+
+            //        if (mMode == MODE.COLORING) {
+//            if (x == mTouchPosX && y == mTouchPosY) {
+//                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2 + 1, (y + mTouchPosY) / 2 + 1);
+//
+//            } else {
+//                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
+//
+//            }
+//
+//            mCanvasBuffer.drawPath(mPathColoring, mPaintColoring);
+//            mPathColoring.reset();
+//        }
+
+            mTouchPosX = Float.MIN_VALUE;
+            mTouchPosY = Float.MIN_VALUE;
         }
     }
 
-    /**
-     * Perform a touch event when in UnitVector drawing mode.
-     * @param action DOWN, MOVE, UP
-     * @param x touch.x
-     * @param y touch.y
-     */
-    private void doTouchEventPlaceVector(int action, float x, float y) {
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-                doTouchDownPlaceVector(x, y);
-                break;
-
-            case MotionEvent.ACTION_MOVE:
-                doTouchMovePlaceVector(x, y);
-                break;
-
-            case MotionEvent.ACTION_UP:
-                doTouchUpPlaceVector(x, y);
-                break;
-        }
-    }
+    private PlaceVectorTouchEventListener mPlaceVectorTouchListener = new PlaceVectorTouchEventListener();
 
     /**
-     * Set an origin
-     * @param x touch.x
-     * @param y touch.y
+     * How does a Touch happen when you're in PlaceVector mode???
      */
-    @SuppressLint("DefaultLocale")
-    private void doTouchDownPlaceVector(float x, float y) {
-        // set an origin
-        mCurrentVector = new KUnitVector();
-        mCurrentVector.origin = new KPoint((int) x, (int) y);
-        mCurrentVector.angle = null;
+    class PlaceVectorTouchEventListener extends TouchEventListener {
 
-        if (mCallback != null) {
-            mCallback.onTouchDownForDrawing();
+        @Override
+        void doTouchDown(float x, float y) {
+            // set an origin
+            mCurrentVector = new KUnitVector();
+            mCurrentVector.origin = new KPoint((int) x, (int) y);
+            mCurrentVector.angle = null;
+
+            if (mCallback != null) {
+                mCallback.onTouchDownForDrawing();
+            }
         }
 
-    }
-
-    /**
-     * Redraw line from origin to current point
-     * @param x touch.x
-     * @param y touch.y
-     */
-    private void doTouchMovePlaceVector(float x, float y) {
-        // redraw the thing
-        /*mCanvasBuffer.drawLine(
+        @Override
+        void doTouchMove(float x, float y) {
+            // redraw the thing
+            /*mCanvasBuffer.drawLine(
                 mCurrentVector.origin.x, mCurrentVector.origin.y,
                 x, y, new Paint());*/
 
-        double angle = Util.getRadianAngleBetween2Point(
-                mCurrentVector.origin.x, mCurrentVector.origin.y,
-                (int) x, (int) y);
-
-        mCurrentVector.angle = (int) Math.toDegrees(angle);
-
-        mGleaphHolder.drawAngledGleaphFrame(
-                mCurrentVector.origin.x - 100,
-                mCurrentVector.origin.y - 100,
-                180 - (int) Math.toDegrees(angle));
-
-    }
-
-    /**
-     * Add vector to list of vectors
-     * @param x touch.x
-     * @param y touch.y
-     */
-    private void doTouchUpPlaceVector(float x, float y) {
-
-        double angle = Util.getRadianAngleBetween2Point(
-                mCurrentVector.origin.x, mCurrentVector.origin.y,
-                (int) x, (int) y);
-
-        if (mCurrentVector.angle != null) {
+            double angle = Util.getRadianAngleBetween2Point(
+                    mCurrentVector.origin.x, mCurrentVector.origin.y,
+                    (int) x, (int) y);
 
             mCurrentVector.angle = (int) Math.toDegrees(angle);
-            mAllVectors.add(mCurrentVector);
+
+            mGleaphHolder.drawAngledGleaphFrame(
+                    mCurrentVector.origin.x - 100,
+                    mCurrentVector.origin.y - 100,
+                    180 - (int) Math.toDegrees(angle));
         }
 
-        mGleaphHolder.saveAngledGleaphFrame(
-                mCurrentVector.origin.x - 100,
-                mCurrentVector.origin.y - 100,
-                180 - (int) Math.toDegrees(angle));
+        @Override
+        void doTouchUp(float x, float y) {
+            double angle = Util.getRadianAngleBetween2Point(
+                    mCurrentVector.origin.x, mCurrentVector.origin.y,
+                    (int) x, (int) y);
 
-        mCurrentVector = null;
+            if (mCurrentVector.angle != null) {
+
+                mCurrentVector.angle = (int) Math.toDegrees(angle);
+                mAllVectors.add(mCurrentVector);
+                // mVectorPositions... wtf, should this have things in it???
+            }
+
+            mGleaphHolder.saveAngledGleaphFrame(
+                    mCurrentVector.origin.x - 100,
+                    mCurrentVector.origin.y - 100,
+                    180 - (int) Math.toDegrees(angle));
+
+            mVectorPositions.add(new KPoint(mCurrentVector.origin.x, mCurrentVector.origin.y));
+        }
     }
 
     public boolean isInit() {
@@ -784,11 +762,14 @@ public class ViewDrawingColoring extends View {
         void onTouchDownForDrawing();
     }
 
+    /**
+     * A debugging method for testing re-drawing the last path
+     */
     public void pasteLastPathFiftyPixelsToTheRight() {
 
-        for(int i=1; i < ___lastPointPath.size(); i++) {
-            KPoint lastPoint = ___lastPointPath.get(i-1);
-            KPoint nextPoint = ___lastPointPath.get(i);
+        for(int i=1; i < ___lastPointPath.getSize(); i++) {
+            KPoint lastPoint = ___lastPointPath.getPoint(i-1);
+            KPoint nextPoint = ___lastPointPath.getPoint(i);
 
             int offsetRight = 100 * (___lastPointCounter + 1);
             drawLineWithBrush(mCanvasBuffer,

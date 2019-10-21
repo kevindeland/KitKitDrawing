@@ -1,11 +1,30 @@
 package com.enuma.drawingcoloring.types;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Path
- * <p>An ordered array of points.</p>
+ * KPath
+ * <p>An ordered List of points.</p>
  * Created by kevindeland on 2019-10-15.
  */
 public class KPath {
 
-    KPoint[] path;
+    private List<KPoint> path;
+
+    public KPath() {
+        path = new ArrayList<>();
+    }
+
+    public void addPoint(KPoint point) {
+        path.add(point);
+    }
+
+    public int getSize() {
+        return path.size();
+    }
+
+    public KPoint getPoint(int i) {
+        return path.get(i);
+    }
 }

@@ -365,14 +365,13 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     ////// Begin GleaphHolder
     ////////////////////////////////////
 
-    private RelativeLayout mVSupportLayer;
-    private Collection<ImageView> mSupportVectors;
+    private RelativeLayout mVSupportLayer; // the layer that draws these GleaphFrame views
+    private Collection<ImageView> mSupportVectors; // why is this not used???s
     private ImageView mCurrentVector;
 
     @Override
     public void addOneGleaphFrame(int left, int top) {
-        // PARALLEL see what happens √√√
-        // PARALLEL heck yeah... next make this a method
+        // could make this a new type of view, with its own methods
         ImageView testFrame = new ImageView(this);
         testFrame.setImageDrawable(getResources().getDrawable(R.drawable.frame));
         RelativeLayout.LayoutParams imageParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -389,19 +388,22 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
 
     @Override
     public void drawAngledGleaphFrame(int left, int top, int angle) {
+        // remove the "current vector" because it's the one we're redrawing
         if (mCurrentVector != null) {
             mVSupportLayer.removeView(mCurrentVector);
         }
 
+        // create new ImageView with an arrow to point in the angled direction
         mCurrentVector = new ImageView(this);
         mCurrentVector.setImageDrawable(getResources().getDrawable(R.drawable.vector_arrow));
-
+        // put it at the correct (x,y) and (angle)
         RelativeLayout.LayoutParams imageParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         imageParams.leftMargin = left;
         imageParams.topMargin = top;
         mCurrentVector.setLayoutParams(imageParams);
-
         mCurrentVector.setRotation(angle);
+
+        // add to SupportLayer
         mVSupportLayer.addView(mCurrentVector);
 
     }
