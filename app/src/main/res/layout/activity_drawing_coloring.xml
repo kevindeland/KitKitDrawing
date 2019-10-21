@@ -173,16 +173,6 @@
 
     </FrameLayout>
 
-    <com.enuma.drawingcoloring.view.ViewGleaphDisplay
-        android:id="@+id/v_gleaph_display"
-        android:layout_width="400dp"
-        android:layout_height="400dp"
-        android:layout_marginLeft="200dp"
-        android:layout_marginTop="200dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:background="@android:color/holo_orange_dark"/>
-
     <ImageView
         android:id="@+id/iv_save_effect"
         android:layout_width="0px"

@@ -14,7 +14,7 @@
         android:layout_marginTop="100dp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:background="@android:color/holo_orange_dark"/>
+        android:background="@color/bg_color_0"/>
 
     <com.enuma.drawingcoloring.view.ViewGleaphDisplay
         android:id="@+id/v_gleaph_2"
@@ -24,7 +24,7 @@
         android:layout_marginTop="100dp"
         app:layout_constraintLeft_toRightOf="@id/v_gleaph_1"
         app:layout_constraintTop_toTopOf="parent"
-        android:background="@android:color/holo_orange_dark"/>
+        android:background="@color/bg_color_0"/>
 
     <com.enuma.drawingcoloring.view.ViewGleaphDisplay
         android:id="@+id/v_gleaph_3"
@@ -34,7 +34,7 @@
         android:layout_marginTop="100dp"
         app:layout_constraintLeft_toRightOf="@id/v_gleaph_2"
         app:layout_constraintTop_toTopOf="parent"
-        android:background="@android:color/holo_orange_dark"/>
+        android:background="@color/bg_color_0"/>
 
     <com.enuma.drawingcoloring.view.ViewGleaphDisplay
         android:id="@+id/v_gleaph_4"
@@ -44,7 +44,7 @@
         android:layout_marginTop="100dp"
         app:layout_constraintLeft_toRightOf="@id/v_gleaph_3"
         app:layout_constraintTop_toTopOf="parent"
-        android:background="@android:color/holo_orange_dark"/>
+        android:background="@color/bg_color_0"/>
 
     <Button
         android:id="@+id/v_load_button"
