@@ -79,12 +79,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     private ViewGroup mLayoutDrawing;
     private ViewDrawingColoring mVDrawingColoring;
 
-    private ViewGleaphDisplay mVGleaphDisplay;
     protected ImageView mIvColoring;
-
-    private RelativeLayout mVSupportLayer;
-    private Collection<ImageView> mSupportVectors;
-    private ImageView mCurrentVector;
 
     private ViewPen[] mVPens = new ViewPen[TOTAL_PEN_COLOR_COUNT];
     private ViewPen[] mVSelectedPensEffect = new ViewPen[TOTAL_PEN_COLOR_COUNT];
@@ -206,13 +201,20 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
             BG_COLORS[i] = ContextCompat.getColor(this, Util.getResourceId(this, "bg_color_" + i, "color", packageName));
         }
 
+        // parent container
         findViewById(R.id.layout_root).setOnTouchListener(mOnTouchListener);
 
+        // back button
         findViewById(R.id.v_back).setOnClickListener(mOnClickListener);
 
+        // change background
         mVChangeBg = (ImageView) findViewById(R.id.v_bg);
         mVChangeBg.setOnClickListener(mOnClickListener);
 
+        ///////////////////
+        // for debugging
+        ///////////////////
+        // copy and paste the last path drawn
         findViewById(R.id.v_paste_last).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -220,6 +222,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
             }
         });
 
+        // save the last path drawn
         findViewById(R.id.v_save_last).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -227,38 +230,45 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
             }
         });
 
+        // nothing right now
         findViewById(R.id.v_load_last).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //mVDrawingColoring.loadAndDrawAllSavedJson();
-                mVGleaphDisplay.loadJsonGleaphIntoMe();
+                Log.e("FIXME", "Moved to new Activity");
             }
         });
+        //////////////////////
 
-        // RADIAL
+        // change RADIAL modes
         mVChangeMode = (ImageView) findViewById(R.id.v_mode);
         mVChangeMode.setOnClickListener(mOnClickListener);
 
-        // PARALLEL
+        // change PARALLEL modes
         mVChangeParallel = (ImageView) findViewById(R.id.v_parallel);
         mVChangeParallel.setOnClickListener(mOnClickListener);
 
+        // SAVE bitmap to file
         mVSave = findViewById(R.id.v_save);
         mVSave.setOnClickListener(mOnClickListener);
 
+        // the drawing pad
         mLayoutDrawing = (ViewGroup) findViewById(R.id.layout_drawing);
+
+        // the ViewDrawingColoring, which contains the canvas
         mVDrawingColoring = (ViewDrawingColoring) findViewById(R.id.v_drawing_coloring);
         mVDrawingColoring.setCallback(mViewDrawingCoCallback);
         mVDrawingColoring.setGleaphHolder(this);
 
-        mVGleaphDisplay = (ViewGleaphDisplay) findViewById(R.id.v_gleaph_display);
-
-
+        // ImageView for Coloring, which contains the ColoringBook image to be displayed
         mIvColoring = (ImageView) findViewById(R.id.iv_coloring);
+
+        // Layer for drawing things like GleaphFrame reference points
         mVSupportLayer = (RelativeLayout) findViewById(R.id.v_support_layer);
 
         Bitmap bitmapPen = BitmapFactory.decodeResource(getResources(), R.drawable.drawingpad_crayon_1_white);
 
+        // scale the PenSize to fit within the screen
         int layoutPenHeight = 1800 - (mbSmallLCD ? 121 : 242);
         if (layoutPenHeight < bitmapPen.getHeight() * (TOTAL_PEN_COLOR_COUNT + 1)) {
             float scale = (float) layoutPenHeight / (bitmapPen.getHeight() * (TOTAL_PEN_COLOR_COUNT + 1));
@@ -318,6 +328,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
 
         LinearLayout layoutPen = (LinearLayout) findViewById(R.id.layout_pen);
 
+        // set up all of the pens
         for (int i = 0; i < TOTAL_PEN_COLOR_COUNT; ++i) {
             mVPens[i] = new ViewPen(this);
             mVPens[i].setPenImage(mbSmallLCD ? RESOURCE_PEN_S[i] : RESOURCE_PEN[i], null);
@@ -349,6 +360,14 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
 
         mScale = Util.setScale(mThisActivity, findViewById(R.id.layout_root), false);
     }
+
+    ////////////////////////////////////
+    ////// Begin GleaphHolder
+    ////////////////////////////////////
+
+    private RelativeLayout mVSupportLayer;
+    private Collection<ImageView> mSupportVectors;
+    private ImageView mCurrentVector;
 
     @Override
     public void addOneGleaphFrame(int left, int top) {
@@ -397,10 +416,16 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         mCurrentVector = null;
     }
 
+    ////////////////////////////////////
+    ////// End GleaphHolder
+    ////////////////////////////////////
+
     private void setNeedSave(boolean bNeedSave) {
         mbNeedSave = bNeedSave;
         checkSaveButton();
     }
+
+
 
     private void startSaveAnimation(String bitmapFilePath) {
         Bitmap bitmap = BitmapFactory.decodeFile(bitmapFilePath);
@@ -532,85 +557,105 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
 //                setPenColor(colorIndexTag.intValue());
 
             } else {
-                if (id == R.id.v_back) {
-                    finish();
 
-                } else if (id == R.id.v_bg) {
-                    if (mVDrawingColoring.getMode() == ViewDrawingColoring.MODE.DRAWING) {
-                        DialogSelectDrawingBackground dialogSelectDrawingBackground = new DialogSelectDrawingBackground(mThisActivity, mSelectDrawingBgCallback);
-                        dialogSelectDrawingBackground.show();
+                switch(id) {
+                    case R.id.v_back:
+                        finish();
+                        break;
 
-                    } else {
-                        DialogSelectColoringBackground dialogSelectColoringBackground = new DialogSelectColoringBackground(mThisActivity, mThumbnailsColoring, mSelectColoringBgCallback);
-                        dialogSelectColoringBackground.show();
+                    case R.id.v_bg:
+                        if (mVDrawingColoring.getMode() == ViewDrawingColoring.MODE.DRAWING) {
+                            DialogSelectDrawingBackground dialogSelectDrawingBackground = new DialogSelectDrawingBackground(mThisActivity, mSelectDrawingBgCallback);
+                            dialogSelectDrawingBackground.show();
 
-                    }
-                } else if (id == R.id.v_save) {
-                    Calendar calendar = Calendar.getInstance();
-                    String saveFileName = mSavePath + Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".jpg";
+                        } else {
+                            DialogSelectColoringBackground dialogSelectColoringBackground = new DialogSelectColoringBackground(mThisActivity, mThumbnailsColoring, mSelectColoringBgCallback);
+                            dialogSelectColoringBackground.show();
 
-                    if (Util.saveImageFileFromView(mLayoutDrawing, saveFileName, null, 70)) {
-                        processSaveAmount();
-                        setNeedSave(false);
-                        startSaveAnimation(saveFileName);
-                        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + saveFileName)));
+                        }
+                        break;
+
+                    case R.id.v_save:
+                        Calendar calendar = Calendar.getInstance();
+                        String saveFileName = mSavePath + Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".jpg";
+
+                        if (Util.saveImageFileFromView(mLayoutDrawing, saveFileName, null, 70)) {
+                            processSaveAmount();
+                            setNeedSave(false);
+                            startSaveAnimation(saveFileName);
+                            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + saveFileName)));
+                        }
+                        break;
+
+                    case R.id.v_mode:
+                        changeRadialMode();
+                        break;
 
 
-                    }
-                } else if (id == R.id.v_mode) {
+                    case R.id.v_parallel:
 
-                    // change mode, and change image
-                    ViewDrawingColoring.RADIAL_MODE nextMode;
-                    int nextDraw;
-                    switch(mVDrawingColoring.getRadialMode()) {
-                        case SINGLE:
-                            nextMode = RADIAL_2;
-                            nextDraw = R.drawable.selector_mode_radial2;
-                            break;
-
-                        case RADIAL_2:
-                            nextMode = RADIAL_8;
-                            nextDraw = R.drawable.selector_mode_radial8;
-                            break;
-
-                        case RADIAL_8:
-                        default:
-                            nextMode = SINGLE;
-                            nextDraw = R.drawable.selector_mode_straight;
-
-                    }
-                    mVDrawingColoring.setRadialMode(nextMode);
-
-                    mVChangeMode.setImageDrawable(getResources().getDrawable(nextDraw));
-
-                } else if (id == R.id.v_parallel) {
-
-                    ViewDrawingColoring.PARALLEL_MODE nextMode;
-                    int nextDraw;
-                    switch(mVDrawingColoring.getParellelMode()) {
-                        case DEFAULT:
-                            nextMode = PLACE;
-                            nextDraw = R.drawable.selector_parallel_place;
-                            mVDrawingColoring.resetParallelOrigins();
-                            break;
-
-                         case PLACE:
-                            nextMode = DRAW;
-                            nextDraw = R.drawable.selector_parallel_draw;
-                            break;
-
-                        case DRAW:
-                        default:
-                            nextMode = DEFAULT;
-                            nextDraw = R.drawable.selector_parallel_off;
-                            removeAllGleaphFrames();
-                            break;
-                    }
-                    mVDrawingColoring.setParellelMode(nextMode);
-                    mVChangeParallel.setImageDrawable(getResources().getDrawable(nextDraw));
-                    // change parallel mode and change image (still need icons
+                        changeParallelMode();
                 }
             }
+        }
+
+        /**
+         * cycle between parallel modes
+         */
+        private void changeParallelMode() {
+            ViewDrawingColoring.PARALLEL_MODE nextParallelMode;
+            int nextParallelDraw;
+            switch(mVDrawingColoring.getParellelMode()) {
+                case DEFAULT:
+                    nextParallelMode = PLACE;
+                    nextParallelDraw = R.drawable.selector_parallel_place;
+                    mVDrawingColoring.resetParallelOrigins();
+                    break;
+
+                case PLACE:
+                    nextParallelMode = DRAW;
+                    nextParallelDraw = R.drawable.selector_parallel_draw;
+                    break;
+
+                case DRAW:
+                default:
+                    nextParallelMode = DEFAULT;
+                    nextParallelDraw = R.drawable.selector_parallel_off;
+                    removeAllGleaphFrames();
+                    break;
+            }
+            mVDrawingColoring.setParellelMode(nextParallelMode);
+            mVChangeParallel.setImageDrawable(getResources().getDrawable(nextParallelDraw));
+            // change parallel mode and change image (still need icons
+        }
+
+        /**
+         * cycle between radial modes
+         */
+        private void changeRadialMode() {
+            // change mode, and change image
+            ViewDrawingColoring.RADIAL_MODE nextRadialMode;
+            int nextRadialDraw;
+            switch(mVDrawingColoring.getRadialMode()) {
+                case SINGLE:
+                    nextRadialMode = RADIAL_2;
+                    nextRadialDraw = R.drawable.selector_mode_radial2;
+                    break;
+
+                case RADIAL_2:
+                    nextRadialMode = RADIAL_8;
+                    nextRadialDraw = R.drawable.selector_mode_radial8;
+                    break;
+
+                case RADIAL_8:
+                default:
+                    nextRadialMode = SINGLE;
+                    nextRadialDraw = R.drawable.selector_mode_straight;
+
+            }
+            mVDrawingColoring.setRadialMode(nextRadialMode);
+
+            mVChangeMode.setImageDrawable(getResources().getDrawable(nextRadialDraw));
         }
     };
 
