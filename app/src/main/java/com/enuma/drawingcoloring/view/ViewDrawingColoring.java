@@ -79,8 +79,6 @@ public class ViewDrawingColoring extends View {
         VECTOR      // place and draw as a UnitVector
     }
 
-
-
     /**
      * Touch 의 Move Event 가 TOUCH_TOLERANCE 이내로 움직이면 무시
      */
@@ -196,54 +194,7 @@ public class ViewDrawingColoring extends View {
         }
 
         canvas.drawBitmap(mBitmapBuffer, 0, 0, mPaint);
-
-//        if (mMode == MODE.COLORING) {
-//            if (mPathColoring.isEmpty() == false) {
-//                canvas.drawPath(mPathColoring, mPaintColoring);
-//            }
-//        }
     }
-
-//    @Override
-//    public boolean onTouchEvent(MotionEvent event) {
-//        float x;
-//        float y;
-//
-//        switch (event.getAction() & MotionEvent.ACTION_MASK) {
-//            case MotionEvent.ACTION_DOWN:
-//                mTouchId = event.getPointerId(0);
-//                x = event.getX(event.findPointerIndex(mTouchId));
-//                y = event.getY(event.findPointerIndex(mTouchId));
-//
-//                doTouchDownBrush(x, y);
-//                invalidate();
-//                break;
-//
-//            case MotionEvent.ACTION_MOVE:
-//                if (event.findPointerIndex(mTouchId) != -1) {
-//                    x = event.getX(event.findPointerIndex(mTouchId));
-//                    y = event.getY(event.findPointerIndex(mTouchId));
-//                    doTouchMoveBrush(x, y);
-//                }
-//                invalidate();
-//                break;
-//
-//            case MotionEvent.ACTION_UP:
-//                if (event.findPointerIndex(mTouchId) != -1) {
-//                    x = event.getX(event.findPointerIndex(mTouchId));
-//                    y = event.getY(event.findPointerIndex(mTouchId));
-//                    doTouchUpBrush(x, y);
-//                }
-//                invalidate();
-//                break;
-//        }
-//
-//        return true;
-//    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-
-
 
 
     /**
@@ -323,16 +274,9 @@ public class ViewDrawingColoring extends View {
             mParallelRootReference = 0; // reset!
         // add to array
         mParallelPoints[mParallelRootReference] = origin;
-
-
-        // also later... remove views
     }
 
-    /*public void placeVectorOrigin()*/
-
     /* -- END PARALLEL MODE -- */
-
-
 
     public void clearAll() {
         mBitmapBuffer.eraseColor(Color.TRANSPARENT);
@@ -412,14 +356,6 @@ public class ViewDrawingColoring extends View {
             mTouchRadialPosX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
             mTouchRadialPosY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
 
-//        if (mMode == MODE.DRAWING) {
-//            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
-//
-//        } else {
-//            mPathColoring.moveTo(mTouchPosX, mTouchPosY);
-//
-//        }
-
             mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
 
             if (mParellelMode == PARALLEL_MODE.DRAW && mVectorMode == VECTOR_MODE.VECTOR) {
@@ -463,14 +399,6 @@ public class ViewDrawingColoring extends View {
 
 
             if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
-
-//            if (mMode == MODE.DRAWING) {
-//                drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
-//
-//            } else {
-//                mPathColoring.quadTo(mTouchPosX, mTouchPosY, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
-//
-//            }
 
                 ___lastPointPath.addPoint(new KPoint((int) x, (int) y));
 
@@ -571,19 +499,6 @@ public class ViewDrawingColoring extends View {
         @Override
         public void doTouchUp(float x, float y) {
 
-            //        if (mMode == MODE.COLORING) {
-//            if (x == mTouchPosX && y == mTouchPosY) {
-//                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2 + 1, (y + mTouchPosY) / 2 + 1);
-//
-//            } else {
-//                mPathColoring.quadTo(x, y, (x + mTouchPosX) / 2, (y + mTouchPosY) / 2);
-//
-//            }
-//
-//            mCanvasBuffer.drawPath(mPathColoring, mPaintColoring);
-//            mPathColoring.reset();
-//        }
-
             mTouchPosX = Float.MIN_VALUE;
             mTouchPosY = Float.MIN_VALUE;
         }
@@ -610,10 +525,6 @@ public class ViewDrawingColoring extends View {
 
         @Override
         void doTouchMove(float x, float y) {
-            // redraw the thing
-            /*mCanvasBuffer.drawLine(
-                mCurrentVector.origin.x, mCurrentVector.origin.y,
-                x, y, new Paint());*/
 
             double angle = Util.getRadianAngleBetween2Point(
                     mCurrentVector.origin.x, mCurrentVector.origin.y,
@@ -703,8 +614,6 @@ public class ViewDrawingColoring extends View {
                         lastPoint.x + offsetX,lastPoint.y + offsetY,
                         nextPoint.x + offsetX, nextPoint.y + offsetY);
             }
-
-
         }
     }
 
