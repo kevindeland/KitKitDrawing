@@ -99,9 +99,10 @@ public class ViewDrawingColoring extends View {
 
     private Callback mCallback;
     private MODE mMode = MODE.DRAWING;
-    private RADIAL_MODE mRadialMode = RADIAL_MODE.SINGLE;
 
     private float mTouchPosX, mTouchPosY;
+
+    // variables for RADIAL mode
     // an array of the last drawn Points for each radial line...
     // for example, if we are drawing an 8-arm radial from 0,0... it will progress like:
     // POS0 = [( x00 = 0, y00 = 0), (0, 0)... ]
@@ -109,6 +110,7 @@ public class ViewDrawingColoring extends View {
     // let's say the distance gone each time is di
     // POS1 = [( x10 = x00 + d1*cos(0), y10 = d1*sin(0)), ...)
     // POS2 = [( x20 = x10 + d2*cos(0), y20 = d2*sin(0)), ...)
+    private RADIAL_MODE mRadialMode = RADIAL_MODE.SINGLE;
     private float[] mTouchRadialPosX, mTouchRadialPosY;
 
 
@@ -131,8 +133,6 @@ public class ViewDrawingColoring extends View {
 
     private IBrush mBrush;
 
-
-    private Path mPathColoring = new Path();
     private Rect mRect = new Rect();
     private boolean mbInit = false;
     ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +164,6 @@ public class ViewDrawingColoring extends View {
         boolean isSmallLCD = (size.x <= 1280);
 
         mBrush = new Crayon(mContext, isSmallLCD);
-
 
         // MODE_PARALLEL initialize defaults for testing
         mParellelMode = PARALLEL_MODE.DEFAULT;
@@ -280,7 +279,6 @@ public class ViewDrawingColoring extends View {
 
     public void clearAll() {
         mBitmapBuffer.eraseColor(Color.TRANSPARENT);
-        mPathColoring.reset();
         deleteTempBitmapFile();
         invalidate();
     }
@@ -290,6 +288,8 @@ public class ViewDrawingColoring extends View {
             Util.saveImageFileFromBitmap(mBitmapBuffer, Misc.getTempFilePath(mMode), 100);
         }
     }
+    ///////////////////////////////////////////////////////////
+    //////////// begin TOUCH functions ////////////////////////
 
     public void doTouchEvent(int action, float x, float y) {
         boolean isInvalidate = false;
@@ -298,7 +298,7 @@ public class ViewDrawingColoring extends View {
         }
 
         // when placing, do this thing
-        if (getParellelMode() == PARALLEL_MODE.PLACE) {
+        if (mParellelMode == PARALLEL_MODE.PLACE) {
 
             if (mVectorMode == VECTOR_MODE.VECTOR)
                 mPlaceVectorTouchListener.doTouchEvent(action, x, y);
@@ -316,6 +316,10 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    /**
+     * Customizable class that listens for a Touch, and has a different behavior for:
+     * TouchDown, TouchMove, and TouchUp.
+     */
     private abstract class TouchEventListener {
         void doTouchEvent(int action, float x, float y) {
             switch (action) {
@@ -370,6 +374,12 @@ public class ViewDrawingColoring extends View {
             }
         }
 
+        /**
+         * TODO okaaaaay this is the most complicated part of the code, I wonder if we could break
+         * TODO it down and simplify
+         * @param x
+         * @param y
+         */
         @SuppressLint("DefaultLocale")
         @Override
         public void doTouchMove(float x, float y) {
@@ -408,53 +418,7 @@ public class ViewDrawingColoring extends View {
 
                 if (mParellelMode == PARALLEL_MODE.DRAW) {
 
-                    switch (mVectorMode) {
-                        case JUST_TRANSLATE:
-                            Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
-                            Point referenceOrigin = mParallelPoints[mParallelRootReference];
-                            for (int i = 0; i < mParallelNumPoints; i++) {
-                                Point localOrigin = mParallelPoints[i];
-                                Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
-
-                                int xOffset = referenceOrigin.x - localOrigin.x;
-                                int yOffset = referenceOrigin.y - localOrigin.y;
-
-                                mBrush.drawLineWithBrush(mCanvasBuffer,
-                                        (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
-                                        (int) x - xOffset, (int) y - yOffset);
-                            }
-                            break;
-
-                        case VECTOR:
-                            KUnitVector referenceVector = mAllVectors.get(0);
-                            int angleXEnd, angleYEnd;
-                            for (int i = 0; i < mAllVectors.size(); i++) {
-                                KUnitVector localVector = mAllVectors.get(i);
-
-                                angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
-                                angleXEnd = (int) (distance * Math.sin(angleReverse));
-                                angleYEnd = (int) (distance * Math.cos(angleReverse));
-
-                                int xOffset = referenceVector.origin.x - localVector.origin.x;
-                                int yOffset = referenceVector.origin.y - localVector.origin.y;
-
-                                // for the first time, it's the origin
-                                KPoint lastDrawn = mVectorPositions.get(i);
-                                int nextX = lastDrawn.x + angleXEnd;
-                                int nextY = lastDrawn.y + angleYEnd;
-                                //Log.i("VECTOR", "Drawing line from (%f")
-                                mBrush.drawLineWithBrush(mCanvasBuffer,
-                                        (int) (lastDrawn.x) , (int) (lastDrawn.y),
-                                        (int) (nextX), (int) (nextY));
-
-
-                                mVectorPositions.set(i, new KPoint(
-                                        nextX, nextY
-                                ));
-                            }
-                            break;
-
-                    }
+                    doTouchMoveParallelDraw((int) x, (int) y, distance, angle);
                 } else {
                     // only draw one
                     mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
@@ -463,9 +427,12 @@ public class ViewDrawingColoring extends View {
                 mTouchPosX = x;
                 mTouchPosY = y;
 
+                /////////////////////////////////////////////////////
+                ///////////// begin RADIAL drawing mode /////////////
+
                 int NUM_ANGLES = 3;
 
-                switch(getRadialMode()) {
+                switch(mRadialMode) {
                     case SINGLE:
                         return; // don't do extra drawing... this could be refactored
 
@@ -494,6 +461,64 @@ public class ViewDrawingColoring extends View {
                 }
             }
 
+        }
+
+        /**
+         * when in parallel mode, do a TouchMove for either TRANSLATE or VECTOR mode
+         * @param x
+         * @param y
+         * @param distance
+         * @param angle
+         */
+        private void doTouchMoveParallelDraw(int x, int y, double distance, double angle) {
+            double angleReverse;
+            switch (mVectorMode) {
+                case JUST_TRANSLATE:
+                    Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
+                    Point referenceOrigin = mParallelPoints[mParallelRootReference];
+                    for (int i = 0; i < mParallelNumPoints; i++) {
+                        Point localOrigin = mParallelPoints[i];
+                        Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
+
+                        int xOffset = referenceOrigin.x - localOrigin.x;
+                        int yOffset = referenceOrigin.y - localOrigin.y;
+
+                        mBrush.drawLineWithBrush(mCanvasBuffer,
+                                (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
+                                x - xOffset, y - yOffset);
+                    }
+                    break;
+
+                case VECTOR:
+                    KUnitVector referenceVector = mAllVectors.get(0);
+                    int angleXEnd, angleYEnd;
+                    for (int i = 0; i < mAllVectors.size(); i++) {
+                        KUnitVector localVector = mAllVectors.get(i);
+
+                        angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
+                        angleXEnd = (int) (distance * Math.sin(angleReverse));
+                        angleYEnd = (int) (distance * Math.cos(angleReverse));
+
+                        int xOffset = referenceVector.origin.x - localVector.origin.x;
+                        int yOffset = referenceVector.origin.y - localVector.origin.y;
+
+                        // for the first time, it's the origin
+                        KPoint lastDrawn = mVectorPositions.get(i);
+                        int nextX = lastDrawn.x + angleXEnd;
+                        int nextY = lastDrawn.y + angleYEnd;
+                        //Log.i("VECTOR", "Drawing line from (%f")
+                        mBrush.drawLineWithBrush(mCanvasBuffer,
+                                (int) (lastDrawn.x) , (int) (lastDrawn.y),
+                                (int) (nextX), (int) (nextY));
+
+
+                        mVectorPositions.set(i, new KPoint(
+                                nextX, nextY
+                        ));
+                    }
+                    break;
+
+            }
         }
 
         @Override
@@ -590,6 +615,9 @@ public class ViewDrawingColoring extends View {
         void onTouchDownForDrawing();
     }
 
+    ///////////////////////////////////////////////////////////
+    //////////// begin DEBUG functions ////////////////////////
+
 
     /**
      * Should only be called after PLACE mode.
@@ -635,6 +663,9 @@ public class ViewDrawingColoring extends View {
         ___lastPointCounter++;
     }
 
+    /**
+     * Takes the last single stroke drawn, and saves it to a JSON file
+     */
     public void saveLastPathAsJson() {
 
         String writeme = _gson.toJson(___lastPointPath);
@@ -655,6 +686,9 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    /**
+     * Finds all JSON files in the GLEAPH folder, and renders them on the Canvas.
+     */
     public void loadAndDrawAllSavedJson() {
 
         try {
