@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.support.v4.content.ContextCompat;
 
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.utility.Util;
@@ -18,6 +19,8 @@ import com.enuma.drawingcoloring.utility.Util;
  */
 public class Crayon implements IBrush {
 
+
+    private Context mContext;
     /**
      * Brush 이미지의 수평 갯수
      */
@@ -52,19 +55,21 @@ public class Crayon implements IBrush {
     private int mCurrentColor;
 
     private Paint mPaintDrawing = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
-    private Paint mPaintColoring = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
 
 
     public Crayon(Context context, boolean isSmallLCD) {
+        mContext = context;
         mBitmapBrushAlphaChannel = BitmapFactory.decodeResource(context.getResources(), isSmallLCD ? R.drawable.crayon_brush_alpha_s : R.drawable.crayon_brush_alpha);
         mBitmapBrush = Bitmap.createBitmap(mBitmapBrushAlphaChannel.getWidth(), mBitmapBrushAlphaChannel.getHeight(), Bitmap.Config.ARGB_8888);
         BRUSH_POINT_WIDTH = mBitmapBrushAlphaChannel.getWidth() / BRUSH_WIDTH_COUNT;
         BRUSH_POINT_HEIGHT = mBitmapBrushAlphaChannel.getHeight() / BRUSH_HEIGHT_COUNT;
 
-        mPaintColoring.setStyle(Paint.Style.STROKE);
-        mPaintColoring.setStrokeJoin(Paint.Join.ROUND);
-        mPaintColoring.setStrokeCap(Paint.Cap.ROUND);
-        mPaintColoring.setStrokeWidth(BRUSH_POINT_WIDTH / 3.0f * 2);
+        /// this is nuts
+        mBitmapBrush.eraseColor(ContextCompat.getColor(mContext, Util.getResourceId(mContext, "color_1", "color", mContext.getPackageName())));
+        Canvas canvas = new Canvas(mBitmapBrush);
+        Paint paint = new Paint(mPaintDrawing);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+        canvas.drawBitmap(mBitmapBrushAlphaChannel, 0, 0, paint);
     }
 
     public void setPenColor(int color) {
