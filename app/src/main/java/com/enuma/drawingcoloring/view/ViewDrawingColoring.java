@@ -10,17 +10,15 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.support.annotation.Nullable;
-import android.text.method.Touch;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.GleaphHolder;
+import com.enuma.drawingcoloring.brush.Crayon;
+import com.enuma.drawingcoloring.brush.IBrush;
 import com.enuma.drawingcoloring.core.Const;
 import com.enuma.drawingcoloring.types.KPath;
 import com.enuma.drawingcoloring.types.KPoint;
@@ -81,30 +79,7 @@ public class ViewDrawingColoring extends View {
         VECTOR      // place and draw as a UnitVector
     }
 
-    /**
-     * Brush 이미지의 수평 갯수
-     */
-    private final int BRUSH_WIDTH_COUNT = 5;
 
-    /**
-     * Brush 이미지의 수직 갯수
-     */
-    private final int BRUSH_HEIGHT_COUNT = 2;
-
-    /**
-     * Brush 이미지의 Brush 갯수
-     */
-    private final int BRUSH_COUNT = BRUSH_WIDTH_COUNT * BRUSH_HEIGHT_COUNT;
-
-    /**
-     * 하나의 Brush Image width
-     */
-    private int BRUSH_POINT_WIDTH = 0;
-
-    /**
-     * 하나의 Brush Image height
-     */
-    private int BRUSH_POINT_HEIGHT = 0;
 
     /**
      * Touch 의 Move Event 가 TOUCH_TOLERANCE 이내로 움직이면 무시
@@ -117,11 +92,6 @@ public class ViewDrawingColoring extends View {
 
     ////////////////////////////////////////////////////////////////////////////////
 
-    /** 원본 Brush Alpha 채널 이미지 */
-    private Bitmap mBitmapBrushAlphaChannel;
-
-    /** 실제 사용하는 Brush 이미지 */
-    private Bitmap mBitmapBrush;
 
     /** Double Buffer */
     private Bitmap mBitmapBuffer;
@@ -132,7 +102,7 @@ public class ViewDrawingColoring extends View {
     private Callback mCallback;
     private MODE mMode = MODE.DRAWING;
     private RADIAL_MODE mRadialMode = RADIAL_MODE.SINGLE;
-    private int mCurrentColor;
+
     private float mTouchPosX, mTouchPosY;
     // an array of the last drawn Points for each radial line...
     // for example, if we are drawing an 8-arm radial from 0,0... it will progress like:
@@ -161,8 +131,8 @@ public class ViewDrawingColoring extends View {
     /** 일반적으로 사용 Paint */
     private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
 
-    private Paint mPaintDrawing = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
-    private Paint mPaintColoring = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+    private IBrush mBrush;
+
 
     private Path mPathColoring = new Path();
     private Rect mRect = new Rect();
@@ -195,15 +165,7 @@ public class ViewDrawingColoring extends View {
         Point size = Util.getWindowSize((Activity)context);
         boolean isSmallLCD = (size.x <= 1280);
 
-        mBitmapBrushAlphaChannel = BitmapFactory.decodeResource(mContext.getResources(), isSmallLCD ? R.drawable.crayon_brush_alpha_s : R.drawable.crayon_brush_alpha);
-        mBitmapBrush = Bitmap.createBitmap(mBitmapBrushAlphaChannel.getWidth(), mBitmapBrushAlphaChannel.getHeight(), Bitmap.Config.ARGB_8888);
-        BRUSH_POINT_WIDTH = mBitmapBrushAlphaChannel.getWidth() / BRUSH_WIDTH_COUNT;
-        BRUSH_POINT_HEIGHT = mBitmapBrushAlphaChannel.getHeight() / BRUSH_HEIGHT_COUNT;
-
-        mPaintColoring.setStyle(Paint.Style.STROKE);
-        mPaintColoring.setStrokeJoin(Paint.Join.ROUND);
-        mPaintColoring.setStrokeCap(Paint.Cap.ROUND);
-        mPaintColoring.setStrokeWidth(BRUSH_POINT_WIDTH / 3.0f * 2);
+        mBrush = new Crayon(mContext, isSmallLCD);
 
 
         // MODE_PARALLEL initialize defaults for testing
@@ -281,63 +243,8 @@ public class ViewDrawingColoring extends View {
 
     ////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Random 한 Brush Point Image
-     *
-     * @return
-     */
-    private Bitmap getBrushPointBitmap() {
-        Bitmap result;
 
-        int rand = (int) (Math.random() * BRUSH_COUNT);
-        result = Bitmap.createBitmap(mBitmapBrush,
-                (rand % BRUSH_WIDTH_COUNT) * BRUSH_POINT_WIDTH,
-                (rand / BRUSH_WIDTH_COUNT) * BRUSH_POINT_HEIGHT,
-                BRUSH_POINT_WIDTH,
-                BRUSH_POINT_HEIGHT);
 
-        return result;
-    }
-
-    /**
-     * 크레용 질감의 Line Drawing
-     *
-     * draw line between [startX, startY], and [endX, endY]
-     * @param canvas
-     * @param startX
-     * @param startY
-     * @param endX
-     * @param endY
-     */
-    @SuppressLint("DefaultLocale")
-    private void drawLineWithBrush(Canvas canvas, int startX, int startY, int endX, int endY) {
-        // MAGIC here is where it is!!!!
-        int distance = (int) Util.getDistanceBetween2Point(startX, startY, endX, endY);
-        double angle = Util.getRadianAngleBetween2Point(startX, startY, endX, endY);
-        double angleReverse = angle - Math.toRadians(180); // duh...
-
-        Log.i("MAGIC", String.format("distance=%d, angle=%f", distance, angle));
-
-        int halfBrushWidth = BRUSH_POINT_WIDTH / 2;
-        int halfBrushHeight = BRUSH_POINT_WIDTH / 2;
-        int x, y;
-        int xRev, yRev;
-
-        int offset = halfBrushWidth / 2;
-
-        for (int i = 0; i <= distance; i += offset) {
-            x = (int) (startX + (Math.sin(angle) * i) - halfBrushWidth);
-            y = (int) (startY + (Math.cos(angle) * i) - halfBrushHeight);
-            canvas.drawBitmap(getBrushPointBitmap(), x, y, mPaintDrawing);
-
-            // try this :)
-            // weird almost perpendicular thing
-            /* xRev = (int) (startX + (Math.sin(angleReverse) * i) - halfBrushWidth);
-            yRev = (int) (startY + (Math.cos(angleReverse) * i) - halfBrushHeight);
-            canvas.drawBitmap(getBrushPointBitmap(), xRev, yRev, mPaintDrawing); */
-
-        }
-    }
 
     /**
      * 임시 파일 삭제
@@ -370,7 +277,11 @@ public class ViewDrawingColoring extends View {
 
     public void setMode(MODE mode) {
         mMode = mode;
-        setPenColor(mCurrentColor);
+        //mBrush.setPenColor(mCurrentColor);
+    }
+
+    public void setPenColor(int color) {
+        mBrush.setPenColor(color);
     }
 
     public MODE getMode() {
@@ -421,27 +332,7 @@ public class ViewDrawingColoring extends View {
 
     /* -- END PARALLEL MODE -- */
 
-    public void setPenColor(int color) {
-        mCurrentColor = color;
 
-//        if (mMode == MODE.DRAWING) {
-//            mBitmapBrush.eraseColor(color);
-//            Canvas canvas = new Canvas(mBitmapBrush);
-//            Paint paint = new Paint(mPaintDrawing);
-//            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-//            canvas.drawBitmap(mBitmapBrushAlphaChannel, 0, 0, paint);
-//
-//        } else {
-//            mPaintColoring.setColor(color);
-//
-//        }
-
-            mBitmapBrush.eraseColor(color);
-            Canvas canvas = new Canvas(mBitmapBrush);
-            Paint paint = new Paint(mPaintDrawing);
-            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-            canvas.drawBitmap(mBitmapBrushAlphaChannel, 0, 0, paint);
-    }
 
     public void clearAll() {
         mBitmapBuffer.eraseColor(Color.TRANSPARENT);
@@ -529,7 +420,7 @@ public class ViewDrawingColoring extends View {
 //
 //        }
 
-            drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
+            mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
 
             if (mParellelMode == PARALLEL_MODE.DRAW && mVectorMode == VECTOR_MODE.VECTOR) {
                 // for all (next)
@@ -600,7 +491,7 @@ public class ViewDrawingColoring extends View {
                                 int xOffset = referenceOrigin.x - localOrigin.x;
                                 int yOffset = referenceOrigin.y - localOrigin.y;
 
-                                drawLineWithBrush(mCanvasBuffer,
+                                mBrush.drawLineWithBrush(mCanvasBuffer,
                                         (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
                                         (int) x - xOffset, (int) y - yOffset);
                             }
@@ -624,7 +515,7 @@ public class ViewDrawingColoring extends View {
                                 int nextX = lastDrawn.x + angleXEnd;
                                 int nextY = lastDrawn.y + angleYEnd;
                                 //Log.i("VECTOR", "Drawing line from (%f")
-                                drawLineWithBrush(mCanvasBuffer,
+                                mBrush.drawLineWithBrush(mCanvasBuffer,
                                         (int) (lastDrawn.x) , (int) (lastDrawn.y),
                                         (int) (nextX), (int) (nextY));
 
@@ -638,7 +529,7 @@ public class ViewDrawingColoring extends View {
                     }
                 } else {
                     // only draw one
-                    drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
+                    mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
                 }
 
                 mTouchPosX = x;
@@ -667,7 +558,7 @@ public class ViewDrawingColoring extends View {
                     angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
                     angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
 
-                    drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
+                    mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
                             (int) mTouchRadialPosX[i-1] + angleXEnd, (int) mTouchRadialPosY[i-1] + angleYEnd);
 
                     mTouchRadialPosX[i-1] = mTouchRadialPosX[i-1] + angleXEnd;
@@ -792,6 +683,11 @@ public class ViewDrawingColoring extends View {
     /**
      * Should only be called after PLACE mode.
      * the path will be inserted at every parallel point
+     *
+     * TODO next... do this with rotations!!!
+     * i.e... instead of iterating through mParallelPoints, go through the UnitVectors.
+     *
+     * also... might need to do some tricky rotation about the center point
      * @param path
      */
     public void insertMassGleaph(List<KPoint> path) {
@@ -803,7 +699,7 @@ public class ViewDrawingColoring extends View {
             for (int j=1; j < path.size(); j++) {
                 KPoint lastPoint = path.get(j-1);
                 KPoint nextPoint = path.get(j);
-                drawLineWithBrush(mCanvasBuffer,
+                mBrush.drawLineWithBrush(mCanvasBuffer,
                         lastPoint.x + offsetX,lastPoint.y + offsetY,
                         nextPoint.x + offsetX, nextPoint.y + offsetY);
             }
@@ -822,7 +718,7 @@ public class ViewDrawingColoring extends View {
             KPoint nextPoint = ___lastPointPath.getPoint(i);
 
             int offsetRight = 100 * (___lastPointCounter + 1);
-            drawLineWithBrush(mCanvasBuffer,
+            mBrush.drawLineWithBrush(mCanvasBuffer,
                     lastPoint.x + offsetRight, lastPoint.y,
                     nextPoint.x + offsetRight, nextPoint.y);
         }
@@ -873,7 +769,7 @@ public class ViewDrawingColoring extends View {
                 for (int i = 1; i < x.size(); i++) {
                     KPoint lastPoint = x.get(i - 1);
                     KPoint nextPoint = x.get(i);
-                    drawLineWithBrush(mCanvasBuffer,
+                    mBrush.drawLineWithBrush(mCanvasBuffer,
                             lastPoint.x, lastPoint.y,
                             nextPoint.x, nextPoint.y);
                 }
