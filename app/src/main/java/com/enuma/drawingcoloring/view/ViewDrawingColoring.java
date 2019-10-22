@@ -122,7 +122,7 @@ public class ViewDrawingColoring extends View {
 
 
     // variables for VectorMode
-    private VECTOR_MODE mVectorMode = VECTOR_MODE.JUST_TRANSLATE;
+    private VECTOR_MODE mVectorMode = VECTOR_MODE.VECTOR;
     private KUnitVector mCurrentVector;
     private ArrayList<KUnitVector> mAllVectors = new ArrayList<>();
     // List of lastDrawn positions for Vectors
@@ -629,18 +629,67 @@ public class ViewDrawingColoring extends View {
      * also... might need to do some tricky rotation about the center point
      * @param path
      */
-    public void insertMassGleaph(List<KPoint> path) {
-        for (int i=0; i < mParallelNumPoints; i++) {
+    public void insertMassGleaph(KPath path) {
 
-            int offsetX = mParallelPoints[i].x;
-            int offsetY = mParallelPoints[i].y;
 
-            for (int j=1; j < path.size(); j++) {
-                KPoint lastPoint = path.get(j-1);
-                KPoint nextPoint = path.get(j);
-                mBrush.drawLineWithBrush(mCanvasBuffer,
-                        lastPoint.x + offsetX,lastPoint.y + offsetY,
-                        nextPoint.x + offsetX, nextPoint.y + offsetY);
+        // only place at (X,Y), with no location
+        if (mVectorMode == VECTOR_MODE.JUST_TRANSLATE) {
+            for (int i = 0; i < mParallelNumPoints; i++) {
+
+                int offsetX = mParallelPoints[i].x;
+                int offsetY = mParallelPoints[i].y;
+
+                for (int j = 1; j < path.getSize(); j++) {
+                    KPoint lastPoint = path.getPoint(j - 1);
+                    KPoint nextPoint = path.getPoint(j);
+                    mBrush.drawLineWithBrush(mCanvasBuffer,
+                            lastPoint.x + offsetX, lastPoint.y + offsetY,
+                            nextPoint.x + offsetX, nextPoint.y + offsetY);
+                }
+            }
+        } else if (mVectorMode == VECTOR_MODE.VECTOR) {
+
+            int angleXEnd, angleYEnd;
+            mVectorPositions.clear();
+
+            for (int i=0; i < mAllVectors.size(); i++) {
+
+                int offsetX = mAllVectors.get(i).origin.x;
+                int offsetY = mAllVectors.get(i).origin.y;
+
+                // start drawing from the beginning, no matter what?
+                mVectorPositions.add(new KPoint(0, 0)); // this is kinda redundant lol
+                mVectorPositions.set(i, mAllVectors.get(i).origin);
+
+                for (int j = 1; j < path.getSize(); j++) {
+
+                    KPoint lastPoint = path.getPoint(j - 1);
+                    KPoint nextPoint = path.getPoint(j);
+
+                    double distance = Util.getDistanceBetween2Point(
+                            lastPoint.x, lastPoint.y, nextPoint.x, nextPoint.y
+                    );
+                    double angle = Util.getRadianAngleBetween2Point(
+                            lastPoint.x, lastPoint.y, nextPoint.x, nextPoint.y
+                    );
+
+                    double angleReverse = Math.toRadians(mAllVectors.get(i).angle) + angle;
+                    angleXEnd = (int) (distance * Math.sin(angleReverse));
+                    angleYEnd = (int) (distance * Math.cos(angleReverse));
+
+
+                    KPoint lastDrawn = mVectorPositions.get(i);
+                    int nextX = lastDrawn.x + angleXEnd;
+                    int nextY = lastDrawn.y + angleYEnd;
+
+                    // TODO fuck... idk
+                    mBrush.drawLineWithBrush(mCanvasBuffer,
+                            lastDrawn.x, lastDrawn.y,
+                            nextX, nextY);
+
+                    mVectorPositions.set(i, new KPoint(nextX, nextY));
+                }
+
             }
         }
     }

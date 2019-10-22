@@ -115,7 +115,7 @@ public class GleaphGalleryActivity extends BaseActivity {
             v.setBackgroundColor(getResources().getColor(R.color.bg_color_4));
 
 
-            List<KPoint> returnMe = mSelected.getPath();
+            KPath returnMe = mSelected.getPath();
             // TODO somehow pass back a KPath as Intent
             Intent gleaphIntent = new Intent();
             gleaphIntent.putExtra("GLEAPH", _gson.toJson(returnMe));

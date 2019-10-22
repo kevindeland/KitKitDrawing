@@ -27,4 +27,8 @@ public class KPath {
     public KPoint getPoint(int i) {
         return path.get(i);
     }
+
+    public List<KPoint> getPath() {
+        return path;
+    }
 }

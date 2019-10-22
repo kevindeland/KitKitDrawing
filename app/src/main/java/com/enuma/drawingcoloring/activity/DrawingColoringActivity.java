@@ -385,8 +385,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
         Log.i("XYZ", "onActivityResult");
         String xyz = data.getStringExtra("GLEAPH");
         Log.i("XYZ", xyz);
-        List<KPoint> x = _gson.fromJson(xyz, new TypeToken<List<KPoint>>() {
-        }.getType());
+        KPath x = _gson.fromJson(xyz, KPath.class);
 
         // TODO place things...
         mVDrawingColoring.insertMassGleaph(x);

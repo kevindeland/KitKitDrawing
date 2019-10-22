@@ -15,6 +15,7 @@ import android.view.View;
 import com.enuma.drawingcoloring.brush.Crayon;
 import com.enuma.drawingcoloring.brush.IBrush;
 import com.enuma.drawingcoloring.core.Const;
+import com.enuma.drawingcoloring.types.KPath;
 import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Util;
@@ -48,7 +49,7 @@ public class ViewGleaphDisplay extends View {
     private Rect mRect = new Rect();
     private boolean mbInit = false;
 
-    List<KPoint> mPath;
+    KPath mPath;
 
     IBrush mCrayon;
 
@@ -119,34 +120,34 @@ public class ViewGleaphDisplay extends View {
         BufferedReader br = new BufferedReader(
                 new FileReader(file)
         );
-        List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>() {
-        }.getType());
+        KPath x = _gson.fromJson(br, KPath.class);
 
 
-        List<KPoint> newList = scaleGleaphToZero(x);
+        KPath newList = scaleGleaphToZero(x);
         mPath = newList;
 
-        Log.i("DRAWME", "drawing " + x.size() + " for " + x.toString());
+        Log.i("DRAWME", "drawing " + x.getSize() + " for " + x.toString());
 
-        for (int i = 1; i < newList.size(); i++) {
+        for (int i = 1; i < newList.getSize(); i++) {
             Log.v("DRAWME", "Drawing a thing");
-            KPoint lastPoint = newList.get(i - 1);
-            KPoint nextPoint = newList.get(i);
+            KPoint lastPoint = newList.getPoint(i - 1);
+            KPoint nextPoint = newList.getPoint(i);
             mCrayon.drawLineWithBrush(mCanvasBuffer,
                     lastPoint.x, lastPoint.y,
                     nextPoint.x, nextPoint.y);
         }
     }
 
-    public List<KPoint> getPath() {
+    public KPath getPath() {
         return mPath;
     }
 
-    private List<KPoint> scaleGleaphToZero(List<KPoint> gleaph) {
+    private KPath scaleGleaphToZero(KPath gleaph) {
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
         int maxX = 0, maxY = 0;
 
-        for (KPoint point : gleaph) {
+        for (int i=0; i < gleaph.getSize(); i++) {
+            KPoint point = gleaph.getPoint(i);
             if (point.x < minX) {
                 minX = point.x;
             }
@@ -166,9 +167,9 @@ public class ViewGleaphDisplay extends View {
         int Y_DIFF = maxY - minY;
 
 
-        List<KPoint> newList = new ArrayList<>();
-        for (KPoint point : gleaph) {
-            newList.add(new KPoint(point.x - minX, point.y - minY));
+        KPath newList = new KPath();
+        for (KPoint point : gleaph.getPath()) {
+            newList.addPoint(new KPoint(point.x - minX, point.y - minY));
         }
 
         return newList;
