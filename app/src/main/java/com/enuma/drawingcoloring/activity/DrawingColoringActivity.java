@@ -209,6 +209,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
 
         for (int i = 0; i < TOTAL_PEN_COLOR_COUNT; ++i) {
             PEN_COLORS[i] = ContextCompat.getColor(this, Util.getResourceId(this, "color_" + i, "color", packageName));
+            Log.i("COLOR", "Color " + i + " = " + PEN_COLORS[i]);
         }
 
         for (int i = 0; i < TOTAL_BG_COLOR_COUNT; ++i) {
@@ -253,6 +254,28 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
                 startActivityForResult(intent, Const.REQUEST_GLEAPH_CODE);
                 // TODO somehow wait for a selected Gleaph and load it into parallel things
 
+            }
+        });
+
+        findViewById(R.id.v_undo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVDrawingColoring.undo();
+            }
+        });
+
+        findViewById(R.id.v_save_all).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVDrawingColoring.savePaintingAsJson();
+            }
+        });
+
+        findViewById(R.id.v_load_all).setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                mVDrawingColoring.loadLastPaintingJson();
             }
         });
 

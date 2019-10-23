@@ -54,7 +54,7 @@
         android:id="@+id/v_parallel"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:layout_marginLeft="80px"
+        android:layout_marginLeft="10px"
         android:layout_marginTop="48px"
         android:src="@drawable/selector_parallel_off"
         app:layout_constraintLeft_toRightOf="@id/v_mode"
@@ -65,7 +65,7 @@
         android:id="@+id/v_paste_last"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="80px"
+        android:layout_marginLeft="10px"
         android:layout_marginTop="48px"
         app:layout_constraintLeft_toRightOf="@id/v_parallel"
         app:layout_constraintTop_toTopOf="parent"
@@ -76,7 +76,7 @@
         android:id="@+id/v_save_last"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="80px"
+        android:layout_marginLeft="10px"
         android:layout_marginTop="48px"
         app:layout_constraintLeft_toRightOf="@id/v_paste_last"
         app:layout_constraintTop_toTopOf="parent"
@@ -87,11 +87,44 @@
         android:id="@+id/v_gallery"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="80px"
+        android:layout_marginLeft="10px"
         android:layout_marginTop="48px"
         app:layout_constraintLeft_toRightOf="@id/v_save_last"
         app:layout_constraintTop_toTopOf="parent"
         android:text="gallery"
+        />
+
+    <Button
+        android:id="@+id/v_undo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10px"
+        android:layout_marginTop="48px"
+        app:layout_constraintLeft_toRightOf="@id/v_gallery"
+        app:layout_constraintTop_toTopOf="parent"
+        android:text="undo"
+        />
+
+    <Button
+        android:id="@+id/v_save_all"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10px"
+        android:layout_marginTop="10px"
+        app:layout_constraintLeft_toLeftOf="@id/v_undo"
+        app:layout_constraintTop_toBottomOf="@id/v_undo"
+        android:text="save all"
+        />
+
+    <Button
+        android:id="@+id/v_load_all"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="10px"
+        android:layout_marginTop="0px"
+        app:layout_constraintRight_toLeftOf="@id/v_save_all"
+        app:layout_constraintTop_toTopOf="@id/v_save_all"
+        android:text="load all"
         />
 
     <com.enuma.drawingcoloring.view.base.LockableScrollView

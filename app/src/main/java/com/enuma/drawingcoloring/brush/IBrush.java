@@ -15,6 +15,8 @@ public interface IBrush {
      */
     void setPenColor(int color);
 
+    int getPenColor();
+
     /**
      * Draw a line on {@code canvas} from ({@code startX}, {@code startY}) to
      * ({@code endX}, {@code endY})

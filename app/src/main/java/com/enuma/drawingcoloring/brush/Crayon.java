@@ -4,13 +4,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.support.v4.content.ContextCompat;
 
 import com.enuma.drawingcoloring.R;
+import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Util;
+
+import java.util.Locale;
 
 /**
  * Crayon
@@ -86,12 +90,20 @@ public class Crayon implements IBrush {
 //            mPaintColoring.setColor(color);
 //
 //        }
+        Log.i("COLOR", "Setting Pen Color to " + color);
+        int R = Color.red(color), G = Color.green(color), B = Color.blue(color);
+        Log.i("COLOR", String.format(Locale.getDefault(), "R=%d; G=%d; B=%d;",
+                R, G, B));
 
-        mBitmapBrush.eraseColor(color);
+        mBitmapBrush.eraseColor(color); // I think this washes the bitmap with this color? poorly named
         Canvas canvas = new Canvas(mBitmapBrush);
         Paint paint = new Paint(mPaintDrawing);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
         canvas.drawBitmap(mBitmapBrushAlphaChannel, 0, 0, paint);
+    }
+
+    public int getPenColor() {
+        return mCurrentColor;
     }
 
     /**

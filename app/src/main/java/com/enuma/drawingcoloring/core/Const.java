@@ -19,6 +19,7 @@ public class Const {
 
 
     public static final String SAVE_GLEAPH_PATH = Environment.getExternalStorageDirectory() + "/" + "Gleaphs";
+    public static final String SAVE_PAINTING_PATH = Environment.getExternalStorageDirectory() + "/" + "Paintings";
 
     ////////////////////////////////////////////////////////////////////////////////
 

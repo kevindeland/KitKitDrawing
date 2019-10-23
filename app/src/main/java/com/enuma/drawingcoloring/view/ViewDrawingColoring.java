@@ -22,6 +22,7 @@ import com.enuma.drawingcoloring.brush.IBrush;
 import com.enuma.drawingcoloring.core.Const;
 import com.enuma.drawingcoloring.types.KPath;
 import com.enuma.drawingcoloring.types.KPoint;
+import com.enuma.drawingcoloring.types.KStroke;
 import com.enuma.drawingcoloring.types.KUnitVector;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
@@ -37,6 +38,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -47,7 +49,12 @@ import java.util.List;
 public class ViewDrawingColoring extends View {
 
 
+    // painting is a collection of Strokes
+    private List<KStroke> __thisPainting;
     // the path of last points drawn
+
+    private KStroke __lastStroke;
+
     private KPath ___lastPointPath;
     private int ___lastPointCounter = 0;
     private Gson _gson = new Gson();
@@ -164,6 +171,8 @@ public class ViewDrawingColoring extends View {
         boolean isSmallLCD = (size.x <= 1280);
 
         mBrush = new Crayon(mContext, isSmallLCD);
+
+        __thisPainting = new ArrayList<>();
 
         // MODE_PARALLEL initialize defaults for testing
         mParellelMode = PARALLEL_MODE.DEFAULT;
@@ -316,6 +325,39 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    public void undo() {
+        // pop last thing
+        if (__thisPainting.size() == 0) return;
+        __thisPainting.remove(__thisPainting.size() - 1);
+        __lastStroke = __thisPainting.get(__thisPainting.size() - 1);
+
+        // clear the canvas
+        mBitmapBuffer.eraseColor(Color.TRANSPARENT);
+        deleteTempBitmapFile();
+        invalidate();
+
+        // redraw
+        for (KStroke stroke : __thisPainting) {
+            drawStroke(stroke);
+        }
+
+        // UNDO need to keep color to which crayon is selected
+        // mBrush.setPenColor(activity.getSelectedCrayon());
+    }
+
+    private void drawStroke(KStroke stroke) {
+        mBrush.setPenColor(stroke.getColor());
+
+        for (int i = 1; i < stroke.getSize(); i++) {
+            KPoint last = stroke.getPoint(i-1);
+            KPoint next = stroke.getPoint(i);
+
+            mBrush.drawLineWithBrush(mCanvasBuffer,
+                    (int) (last.x) , (int) (last.y),
+                    (int) (next.x), (int) (next.y));
+        }
+    }
+
     /**
      * Customizable class that listens for a Touch, and has a different behavior for:
      * TouchDown, TouchMove, and TouchUp.
@@ -350,6 +392,11 @@ public class ViewDrawingColoring extends View {
 
         @Override
         public void doTouchDown(float x, float y) {
+
+            // UNDO this should also know which type of Stroke it is, i.e. Radial or Parallel
+            __lastStroke = new KStroke(mBrush.getPenColor());
+            __lastStroke.addPoint(new KPoint((int) x, (int) y));
+
             ___lastPointPath = new KPath();
             ___lastPointCounter = 0;
             ___lastPointPath.addPoint(new KPoint((int) x, (int) y));
@@ -360,6 +407,7 @@ public class ViewDrawingColoring extends View {
             mTouchRadialPosX = new float[]{x, x, x, x, x, x, x}; // 7 allows for 8 total
             mTouchRadialPosY = new float[]{y, y, y, y, y, y, y}; // 7 allows for 8 total
 
+            // UNDO add stroke
             mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) mTouchPosX, (int) mTouchPosY);
 
             if (mParellelMode == PARALLEL_MODE.DRAW && mVectorMode == VECTOR_MODE.VECTOR) {
@@ -410,6 +458,7 @@ public class ViewDrawingColoring extends View {
 
             if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
 
+                __lastStroke.addPoint(new KPoint((int) x, (int) y));
                 ___lastPointPath.addPoint(new KPoint((int) x, (int) y));
 
                 Log.v(LINE_TAG, String.format("Drawing from [%d, %d] to [%d, %d]",
@@ -421,6 +470,7 @@ public class ViewDrawingColoring extends View {
                     doTouchMoveParallelDraw((int) x, (int) y, distance, angle);
                 } else {
                     // only draw one
+                    // UNDO add stroke
                     mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
                 }
 
@@ -453,6 +503,7 @@ public class ViewDrawingColoring extends View {
                     angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
                     angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
 
+                    // UNDO add stroke
                     mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
                             (int) mTouchRadialPosX[i-1] + angleXEnd, (int) mTouchRadialPosY[i-1] + angleYEnd);
 
@@ -483,6 +534,7 @@ public class ViewDrawingColoring extends View {
                         int xOffset = referenceOrigin.x - localOrigin.x;
                         int yOffset = referenceOrigin.y - localOrigin.y;
 
+                        // UNDO add stroke
                         mBrush.drawLineWithBrush(mCanvasBuffer,
                                 (int) mTouchPosX - xOffset, (int) mTouchPosY - yOffset,
                                 x - xOffset, y - yOffset);
@@ -507,6 +559,7 @@ public class ViewDrawingColoring extends View {
                         int nextX = lastDrawn.x + angleXEnd;
                         int nextY = lastDrawn.y + angleYEnd;
                         //Log.i("VECTOR", "Drawing line from (%f")
+                        // UNDO add stroke
                         mBrush.drawLineWithBrush(mCanvasBuffer,
                                 (int) (lastDrawn.x) , (int) (lastDrawn.y),
                                 (int) (nextX), (int) (nextY));
@@ -524,6 +577,7 @@ public class ViewDrawingColoring extends View {
         @Override
         public void doTouchUp(float x, float y) {
 
+            __thisPainting.add(__lastStroke);
             mTouchPosX = Float.MIN_VALUE;
             mTouchPosY = Float.MIN_VALUE;
         }
@@ -642,6 +696,7 @@ public class ViewDrawingColoring extends View {
                 for (int j = 1; j < path.getSize(); j++) {
                     KPoint lastPoint = path.getPoint(j - 1);
                     KPoint nextPoint = path.getPoint(j);
+                    // UNDO add stroke
                     mBrush.drawLineWithBrush(mCanvasBuffer,
                             lastPoint.x + offsetX, lastPoint.y + offsetY,
                             nextPoint.x + offsetX, nextPoint.y + offsetY);
@@ -683,6 +738,7 @@ public class ViewDrawingColoring extends View {
                     int nextY = lastDrawn.y + angleYEnd;
 
                     // TODO fuck... idk
+                    // UNDO add stroke
                     mBrush.drawLineWithBrush(mCanvasBuffer,
                             lastDrawn.x, lastDrawn.y,
                             nextX, nextY);
@@ -704,6 +760,7 @@ public class ViewDrawingColoring extends View {
             KPoint nextPoint = ___lastPointPath.getPoint(i);
 
             int offsetRight = 100 * (___lastPointCounter + 1);
+            // UNDO add stroke
             mBrush.drawLineWithBrush(mCanvasBuffer,
                     lastPoint.x + offsetRight, lastPoint.y,
                     nextPoint.x + offsetRight, nextPoint.y);
@@ -735,6 +792,46 @@ public class ViewDrawingColoring extends View {
         }
     }
 
+    public void savePaintingAsJson() {
+
+        String writeme = _gson.toJson(__thisPainting);
+
+        FileWriter file = null;
+        try {
+            Calendar calendar = Calendar.getInstance();
+            String TIME_FORMAT = "yyyy-MM-dd-HH-mm-ss";
+            String filename = Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".json";
+            file = new FileWriter(Const.SAVE_PAINTING_PATH + "/" + filename);
+            file.write(writeme);
+            file.flush();
+            file.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadLastPaintingJson() {
+        try {
+            File folder = new File(Const.SAVE_PAINTING_PATH);
+
+            File[] files = folder.listFiles();
+            if (files.length == 0) return;
+
+            File loadme = files[files.length - 1];
+
+            BufferedReader br = new BufferedReader((new FileReader(loadme)));
+
+            List<KStroke> strokes = _gson.fromJson(br, new TypeToken<List<KStroke>>() {}.getType());
+
+            for (KStroke stroke : strokes) {
+                drawStroke(stroke);;
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Finds all JSON files in the GLEAPH folder, and renders them on the Canvas.
      */
@@ -761,6 +858,7 @@ public class ViewDrawingColoring extends View {
                 for (int i = 1; i < x.size(); i++) {
                     KPoint lastPoint = x.get(i - 1);
                     KPoint nextPoint = x.get(i);
+                    // UNDO add stroke
                     mBrush.drawLineWithBrush(mCanvasBuffer,
                             lastPoint.x, lastPoint.y,
                             nextPoint.x, nextPoint.y);
