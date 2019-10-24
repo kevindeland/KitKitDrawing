@@ -8,7 +8,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.support.annotation.Nullable;
@@ -20,6 +19,7 @@ import com.enuma.drawingcoloring.activity.GleaphHolder;
 import com.enuma.drawingcoloring.brush.Crayon;
 import com.enuma.drawingcoloring.brush.IBrush;
 import com.enuma.drawingcoloring.core.Const;
+import com.enuma.drawingcoloring.files.FileObjectInterface;
 import com.enuma.drawingcoloring.types.KPath;
 import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.types.KStroke;
@@ -34,11 +34,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -774,61 +770,26 @@ public class ViewDrawingColoring extends View {
      */
     public void saveLastPathAsJson() {
 
-        String writeme = _gson.toJson(___lastPointPath);
-        Log.i("JSON", writeme);
-        // SAVE ME
-
-        FileWriter file = null;
-        try {
-            Calendar calendar = Calendar.getInstance();
-            String TIME_FORMAT = "yyyy-MM-dd-HH-mm-ss";
-            String filename = Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".json";
-            file = new FileWriter(Const.SAVE_GLEAPH_PATH + "/" + filename);
-            file.write(writeme);
-            file.flush();
-            file.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        FileObjectInterface.savePathAsGleaphJson(___lastPointPath);
     }
 
+    /**
+     * Save the List of KStroke (__thisPainting) as a JSON value
+     */
     public void savePaintingAsJson() {
 
-        String writeme = _gson.toJson(__thisPainting);
-
-        FileWriter file = null;
-        try {
-            Calendar calendar = Calendar.getInstance();
-            String TIME_FORMAT = "yyyy-MM-dd-HH-mm-ss";
-            String filename = Util.getTimeFormatString(TIME_FORMAT, calendar.getTimeInMillis()) + ".json";
-            file = new FileWriter(Const.SAVE_PAINTING_PATH + "/" + filename);
-            file.write(writeme);
-            file.flush();
-            file.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        FileObjectInterface.savePaintingAsJson(__thisPainting);
     }
 
+    /**
+     * Load the List of KStroke as a JSON value and draw it
+     */
     public void loadLastPaintingJson() {
-        try {
-            File folder = new File(Const.SAVE_PAINTING_PATH);
 
-            File[] files = folder.listFiles();
-            if (files.length == 0) return;
+        List<KStroke> strokes = FileObjectInterface.loadLastPainting();
 
-            File loadme = files[files.length - 1];
-
-            BufferedReader br = new BufferedReader((new FileReader(loadme)));
-
-            List<KStroke> strokes = _gson.fromJson(br, new TypeToken<List<KStroke>>() {}.getType());
-
-            for (KStroke stroke : strokes) {
-                drawStroke(stroke);;
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        for (KStroke stroke : strokes) {
+            drawStroke(stroke);;
         }
     }
 
@@ -836,37 +797,24 @@ public class ViewDrawingColoring extends View {
      * Finds all JSON files in the GLEAPH folder, and renders them on the Canvas.
      */
     public void loadAndDrawAllSavedJson() {
+        List<KPath> paths = FileObjectInterface.loadAllGleaphs();
 
-        try {
-            File folder = new File(Const.SAVE_GLEAPH_PATH);
+        for (KPath x : paths) {
+            Log.i("GSON", x.toString());
 
-            for (final File file : folder.listFiles()) {
-                
-                BufferedReader br = new BufferedReader(
-                        new FileReader(file)
-                );
-                List<KPoint> x = _gson.fromJson(br, new TypeToken<List<KPoint>>() {
-                }.getType());
+            for (KPoint k : x.getPath()) {
 
-                Log.i("GSON", x.toString());
-
-                for (KPoint k : x) {
-
-                    Log.i("GSON", "" + k.x + ", " + k.y);
-                }
-
-                for (int i = 1; i < x.size(); i++) {
-                    KPoint lastPoint = x.get(i - 1);
-                    KPoint nextPoint = x.get(i);
-                    // UNDO add stroke
-                    mBrush.drawLineWithBrush(mCanvasBuffer,
-                            lastPoint.x, lastPoint.y,
-                            nextPoint.x, nextPoint.y);
-                }
+                Log.i("GSON", "" + k.x + ", " + k.y);
             }
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            for (int i = 1; i < x.getSize(); i++) {
+                KPoint lastPoint = x.getPoint(i - 1);
+                KPoint nextPoint = x.getPoint(i);
+                // UNDO add stroke
+                mBrush.drawLineWithBrush(mCanvasBuffer,
+                        lastPoint.x, lastPoint.y,
+                        nextPoint.x, nextPoint.y);
+            }
         }
     }
 }

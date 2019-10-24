@@ -8,15 +8,12 @@ import android.widget.Button;
 
 import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.base.BaseActivity;
-import com.enuma.drawingcoloring.core.Const;
+import com.enuma.drawingcoloring.files.FileObjectInterface;
 import com.enuma.drawingcoloring.types.KPath;
-import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.view.ViewGleaphDisplay;
 import com.google.gson.Gson;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.List;
 
 /**
@@ -84,20 +81,10 @@ public class GleaphGalleryActivity extends BaseActivity {
             @Override
             public void onClick(View v) {
 
+                List<KPath> gleaphs = FileObjectInterface.loadAllGleaphs();
 
-                try {
-                    File folder = new File(Const.SAVE_GLEAPH_PATH);
-
-                    File[] files = folder.listFiles();
-
-                    for (int i=0; i < Math.min(files.length, mViews.length); i++) {
-
-                        File file = files[i];
-                        mViews[i].loadJsonGleaphIntoMe(file);
-                    }
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                for (int i=0; i < Math.min(gleaphs.size(), mViews.length); i++) {
+                    mViews[i].loadJsonGleaphIntoMe(gleaphs.get(i));
                 }
             }
         });
@@ -120,7 +107,6 @@ public class GleaphGalleryActivity extends BaseActivity {
             Intent gleaphIntent = new Intent();
             gleaphIntent.putExtra("GLEAPH", _gson.toJson(returnMe));
             setResult(Activity.RESULT_OK, gleaphIntent);
-            Log.i("XYZ", "onClick");
             finish();
         }
     }

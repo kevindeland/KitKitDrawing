@@ -31,4 +31,8 @@ public class KPath {
     public List<KPoint> getPath() {
         return path;
     }
+
+    public void setPath(List<KPoint> path) {
+        this.path = path;
+    }
 }

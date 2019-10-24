@@ -405,6 +405,7 @@ public class DrawingColoringActivity extends BaseActivity implements GleaphHolde
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        if (data == null) return;
         Log.i("XYZ", "onActivityResult");
         String xyz = data.getStringExtra("GLEAPH");
         Log.i("XYZ", xyz);

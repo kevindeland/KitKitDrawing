@@ -99,34 +99,12 @@ public class ViewGleaphDisplay extends View {
         canvas.drawBitmap(mBitmapBuffer, 0, 0, mPaint);
     }
 
-    public void loadJsonGleaphIntoMe() {
-        // look it up using the code
-        // use drawLineWithBrush
+    public void loadJsonGleaphIntoMe(KPath path) {
 
-        try {
-            File folder = new File(Const.SAVE_GLEAPH_PATH);
-
-            for (final File file : folder.listFiles()) {
-
-                loadJsonGleaphIntoMe(file);
-            }
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void loadJsonGleaphIntoMe(File file) throws FileNotFoundException {
-        BufferedReader br = new BufferedReader(
-                new FileReader(file)
-        );
-        KPath x = _gson.fromJson(br, KPath.class);
-
-
-        KPath newList = scaleGleaphToZero(x);
+        KPath newList = scaleGleaphToZero(path);
         mPath = newList;
 
-        Log.i("DRAWME", "drawing " + x.getSize() + " for " + x.toString());
+        Log.i("DRAWME", "drawing " + path.getSize() + " for " + path.toString());
 
         for (int i = 1; i < newList.getSize(); i++) {
             Log.v("DRAWME", "Drawing a thing");
