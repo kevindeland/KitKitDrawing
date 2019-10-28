@@ -2,6 +2,9 @@ package com.enuma.drawingcoloring.types;
 
 import android.graphics.Color;
 
+import com.enuma.drawingcoloring.view.ViewDrawingColoring;
+
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -43,5 +46,43 @@ public class KStroke {
 
     public KPath getPath() {
         return _path;
+    }
+
+    // RADIAL MODE
+    private ViewDrawingColoring.RADIAL_MODE radialMode;
+    public ViewDrawingColoring.RADIAL_MODE getRadialMode() {
+        return radialMode;
+    }
+    public void setRadialMode(ViewDrawingColoring.RADIAL_MODE radialMode) {
+        this.radialMode = radialMode;
+    }
+
+    // PARALLEL_MODE
+    private ViewDrawingColoring.VECTOR_MODE vectorMode;
+    public ViewDrawingColoring.VECTOR_MODE getVectorMode() {
+        return vectorMode;
+    }
+    public void setVectorMode(ViewDrawingColoring.VECTOR_MODE vectorMode) {
+        this.vectorMode = vectorMode;
+    }
+
+    private Collection<KPoint> points;
+
+    public Collection<KPoint> getPoints() {
+        return points;
+    }
+
+    public void setPoints(Collection<KPoint> points) {
+        this.points = points;
+    }
+
+    private Collection<KUnitVector> vectors;
+
+    public Collection<KUnitVector> getVectors() {
+        return vectors;
+    }
+
+    public void setVectors(Collection<KUnitVector> vectors) {
+        this.vectors = vectors;
     }
 }

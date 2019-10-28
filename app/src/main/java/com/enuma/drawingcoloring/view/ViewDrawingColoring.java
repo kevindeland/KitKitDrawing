@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -53,7 +54,6 @@ public class ViewDrawingColoring extends View {
 
     private KPath ___lastPointPath;
     private int ___lastPointCounter = 0;
-    private Gson _gson = new Gson();
 
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -119,7 +119,7 @@ public class ViewDrawingColoring extends View {
 
     // variables for parallel mode
     private PARALLEL_MODE mParellelMode;
-    private Point[] mParallelPoints; // the origins for all parallel sources...
+    private KPoint[] mParallelPoints; // the origins for all parallel sources...
     private int mParallelNumPoints;
     private int mParallelRootReference = -1; // that last one placed
 
@@ -172,7 +172,7 @@ public class ViewDrawingColoring extends View {
 
         // MODE_PARALLEL initialize defaults for testing
         mParellelMode = PARALLEL_MODE.DEFAULT;
-        mParallelPoints = new Point[10];
+        mParallelPoints = new KPoint[10];
     }
 
     public void setGleaphHolder (GleaphHolder holder)  {
@@ -260,7 +260,7 @@ public class ViewDrawingColoring extends View {
     }
 
     public void resetParallelOrigins() {
-        mParallelPoints = new Point[10]; // no reason we should limit this to ten
+        mParallelPoints = new KPoint[10]; // no reason we should limit this to ten
         mParallelNumPoints = 0;
         mParallelRootReference = -1;
 
@@ -268,7 +268,7 @@ public class ViewDrawingColoring extends View {
         mVectorPositions.clear();
     }
 
-    public void placeParallelOrigin(Point origin) {
+    public void placeParallelOrigin(KPoint origin) {
         // update pointer counter
         mParallelRootReference++;
         if (mParallelNumPoints < 10)
@@ -341,8 +341,20 @@ public class ViewDrawingColoring extends View {
         // mBrush.setPenColor(activity.getSelectedCrayon());
     }
 
+    /**
+     * UNDO this should be dependent on type... KStrokeSpecial
+     * @param stroke
+     */
     private void drawStroke(KStroke stroke) {
+
         mBrush.setPenColor(stroke.getColor());
+
+        if (stroke.getRadialMode() != RADIAL_MODE.SINGLE) {
+            // UNDO okay this is garbage and i have no idea why it's wrong!!! see Screenshots for comparison
+            //Log.i("UNDO_RADIAL", "Drawing Radial Line");
+            drawRadialStroke(stroke, stroke.getRadialMode() == RADIAL_MODE.RADIAL_2 ? 2 : 8);
+            return;
+        }
 
         for (int i = 1; i < stroke.getSize(); i++) {
             KPoint last = stroke.getPoint(i-1);
@@ -352,6 +364,65 @@ public class ViewDrawingColoring extends View {
                     (int) (last.x) , (int) (last.y),
                     (int) (next.x), (int) (next.y));
         }
+    }
+
+    /**
+     * Draw a stroke in #numLines number of radial directions
+     * @param stroke
+     * @param numLines
+     */
+    private void drawRadialStroke(KStroke stroke, int numLines) {
+
+        // UNDO why is this so fucked???
+        // wait a sec... this is just the same as drawing the same Stroke w/ 8 different UnitVectors
+        // where each has the same point but a different angle!!!
+
+        KPoint firstPoint = stroke.getPoint(0);
+        KPoint[] lastRadialPoints = new KPoint[8];
+        Arrays.fill(lastRadialPoints, firstPoint);
+
+
+        for (int i=1; i < stroke.getSize(); i++) {
+            KPoint lastPoint = stroke.getPoint(i-1);
+            KPoint nextPoint = stroke.getPoint(i);
+
+            float lastX = lastPoint.x, lastY = lastPoint.y;
+            float nextX = nextPoint.x, nextY = nextPoint.y;
+
+            float dx = nextX - lastX; // need these for symmetry
+            float dy = nextY - lastY;
+
+            double distance = Util.getDistanceBetween2Point((int) lastX, (int) lastY, (int) nextX, (int) nextY);
+            double angle = Util.getRadianAngleBetween2Point((int) (lastX * 1000),
+                    (int) (lastY * 1000), (int) (nextX * 1000), (int) (nextY * 1000));
+
+            double angleReverse = angle - Math.toRadians(180);
+
+            // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
+            // UNDO copy this or something for Radial
+            int angleDivisor = 360 / numLines;
+            int angleXEnd, angleYEnd;
+            for (int j = 1; j <= numLines; j++) {
+                angleReverse = angle - Math.toRadians(j* angleDivisor);
+                Log.i("UNDO_RADIAL", "i = " + i + " j = " + j + "; numLines = " + numLines + "; angleRadial = " + angleReverse);
+                //Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
+                angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
+                angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
+
+                // UNDO add stroke
+                mBrush.drawLineWithBrush(mCanvasBuffer,
+                        (int) lastRadialPoints[j-1].x, (int) lastRadialPoints[j-1].y,
+                        (int) lastRadialPoints[j-1].x + angleXEnd,
+                        (int) lastRadialPoints[j-1].y + angleYEnd);
+
+                // track each point drawn last
+                lastRadialPoints[j-1] = new KPoint(
+                        lastRadialPoints[j-1].x + angleXEnd,
+                        lastRadialPoints[j-1].y + angleYEnd
+                );
+            }
+        }
+
     }
 
     /**
@@ -391,6 +462,13 @@ public class ViewDrawingColoring extends View {
 
             // UNDO this should also know which type of Stroke it is, i.e. Radial or Parallel
             __lastStroke = new KStroke(mBrush.getPenColor());
+            __lastStroke.setRadialMode(mRadialMode);
+            __lastStroke.setVectorMode(mVectorMode);
+            if (mVectorMode == VECTOR_MODE.VECTOR) {
+                __lastStroke.setVectors(mAllVectors);
+            } else if (mVectorMode == VECTOR_MODE.JUST_TRANSLATE) {
+                __lastStroke.setPoints(Arrays.asList(mParallelPoints));
+            }
             __lastStroke.addPoint(new KPoint((int) x, (int) y));
 
             ___lastPointPath = new KPath();
@@ -442,14 +520,14 @@ public class ViewDrawingColoring extends View {
             double distance = Util.getDistanceBetween2Point((int) mTouchPosX, (int) mTouchPosY, (int) x, (int) y);
             double angle = Util.getRadianAngleBetween2Point((int) (mTouchPosX * 1000),
                     (int) (mTouchPosY * 1000), (int) (x * 1000), (int) (y * 1000));
-            double angleReverse = angle - Math.toRadians(180);
+            double angleRadial = angle - Math.toRadians(180);
 
             // This was useful for debugging
             Log.v(LINE_TAG, String.format("Ø=%f; dx=%f; dy=%f; rcosØ=%f; rsinØ=%f", angle, dx, dy, distance*Math.sin(angle), distance*Math.cos(angle)));
             Log.v(LINE_TAG, String.format("mTouchPosX=%f; mTouchPosY=%f; x=%f; y=%f", mTouchPosX, mTouchPosY, x, y));
             Log.v(LINE_TAG, String.format("dx=%f; dy=%f", dx, dy));
-            Log.v(LINE_TAG, String.format("Ø=%f, -dx=%f; -dy=%f; rcos(Ø-180)=%f; rsin(Ø-180)=%f", angleReverse, -dx, -dy,
-                    distance*Math.sin(angleReverse), distance*Math.cos(angleReverse)));
+            Log.v(LINE_TAG, String.format("Ø=%f, -dx=%f; -dy=%f; rcos(Ø-180)=%f; rsin(Ø-180)=%f", angleRadial, -dx, -dy,
+                    distance*Math.sin(angleRadial), distance*Math.cos(angleRadial)));
 
 
             if (vdx >= TOUCH_TOLERANCE || vdy >= TOUCH_TOLERANCE) {
@@ -491,13 +569,14 @@ public class ViewDrawingColoring extends View {
                 }
 
                 // between N lines, draw lines for 1, N-1 (0 and N are excluded, as they're drawn above)
+                // UNDO copy this or something for Radial
                 int angleDivisor = 360 / NUM_ANGLES;
                 int angleXEnd, angleYEnd;
                 for (int i=1; i<NUM_ANGLES; i++) {
-                    angleReverse = angle - Math.toRadians(i* angleDivisor);
-                    Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleReverse=%f", i, angle, angleReverse));
-                    angleXEnd = (int) (distance * (float) Math.sin(angleReverse));
-                    angleYEnd = (int) (distance * (float) Math.cos(angleReverse));
+                    angleRadial = angle - Math.toRadians(i* angleDivisor);
+                    Log.i(LINE_TAG, String.format("i=%d; angle=%f; angleRadial=%f", i, angle, angleRadial));
+                    angleXEnd = (int) (distance * (float) Math.sin(angleRadial));
+                    angleYEnd = (int) (distance * (float) Math.cos(angleRadial));
 
                     // UNDO add stroke
                     mBrush.drawLineWithBrush(mCanvasBuffer, (int) mTouchRadialPosX[i-1], (int) mTouchRadialPosY[i-1],
@@ -522,9 +601,9 @@ public class ViewDrawingColoring extends View {
             switch (mVectorMode) {
                 case JUST_TRANSLATE:
                     Log.i("PARALLEL", String.format("NumPoints: %d; Root: %d", mParallelNumPoints, mParallelRootReference));
-                    Point referenceOrigin = mParallelPoints[mParallelRootReference];
+                    KPoint referenceOrigin = mParallelPoints[mParallelRootReference];
                     for (int i = 0; i < mParallelNumPoints; i++) {
-                        Point localOrigin = mParallelPoints[i];
+                        KPoint localOrigin = mParallelPoints[i];
                         Log.i("PARALLEL", String.format("Index: %d; X,Y: %d,%d", i, localOrigin.x, localOrigin.y));
 
                         int xOffset = referenceOrigin.x - localOrigin.x;
@@ -651,7 +730,7 @@ public class ViewDrawingColoring extends View {
 
         @Override
         void doTouchUp(float x, float y) {
-            placeParallelOrigin(new Point((int) x, (int) y));
+            placeParallelOrigin(new KPoint((int) x, (int) y));
             mGleaphHolder.addOneGleaphFrame((int) x, (int) y);
         }
     }
@@ -789,6 +868,7 @@ public class ViewDrawingColoring extends View {
         List<KStroke> strokes = FileObjectInterface.loadLastPainting();
 
         for (KStroke stroke : strokes) {
+            Log.i("GSON_RADIAL", stroke.getRadialMode().toString());
             drawStroke(stroke);;
         }
     }

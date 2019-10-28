@@ -113,9 +113,8 @@ public class FileObjectInterface {
 
             BufferedReader br = new BufferedReader((new FileReader(loadme)));
 
-            List<KStroke> strokes = _gson.fromJson(br, new TypeToken<List<KStroke>>() {
+            return _gson.fromJson(br, new TypeToken<List<KStroke>>() {
             }.getType());
-            return strokes;
 
         } catch (
                 FileNotFoundException e) {
