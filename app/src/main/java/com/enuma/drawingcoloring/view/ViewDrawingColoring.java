@@ -15,6 +15,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.enuma.drawingcoloring.R;
 import com.enuma.drawingcoloring.activity.GleaphHolder;
 import com.enuma.drawingcoloring.brush.Crayon;
 import com.enuma.drawingcoloring.brush.IBrush;
@@ -23,6 +24,7 @@ import com.enuma.drawingcoloring.files.FileObjectInterface;
 import com.enuma.drawingcoloring.types.KPath;
 import com.enuma.drawingcoloring.types.KPoint;
 import com.enuma.drawingcoloring.types.KStroke;
+import com.enuma.drawingcoloring.types.KSymbolVector;
 import com.enuma.drawingcoloring.types.KUnitVector;
 import com.enuma.drawingcoloring.utility.Log;
 import com.enuma.drawingcoloring.utility.Misc;
@@ -36,7 +38,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MODE.DRAWING : 크레용 질감 표현 (Brush Image (5 * 2) 이용)
@@ -127,7 +131,26 @@ public class ViewDrawingColoring extends View {
     // variables for VectorMode
     private VECTOR_MODE mVectorMode = VECTOR_MODE.VECTOR;
     private KUnitVector mCurrentVector;
-    private ArrayList<KUnitVector> mAllVectors = new ArrayList<>();
+
+    private Map<KSymbolVector, List<KUnitVector>> mVectorMap;
+
+    private static final KSymbolVector[] mSymbolVectors = {
+            new KSymbolVector(1, "VEC1", R.drawable.vector_arrow_1),
+            new KSymbolVector(2, "VEC2", R.drawable.vector_arrow_2),
+            new KSymbolVector(3, "VEC3", R.drawable.vector_arrow_3),
+            new KSymbolVector(4, "VEC4", R.drawable.vector_arrow_4)
+    };
+    private KSymbolVector mCurrentSymbolVector = mSymbolVectors[2];
+
+    public KSymbolVector getCurrentSymbolVector() {
+        return mCurrentSymbolVector;
+    }
+
+    public void setCurrentSymbolVector(int index) {
+        this.mCurrentSymbolVector = mSymbolVectors[index];
+    }
+
+    //private ArrayList<KUnitVector> mAllVectors = new ArrayList<>();
     // List of lastDrawn positions for Vectors
     private ArrayList<KPoint> mVectorPositions = new ArrayList<>();
 
@@ -173,6 +196,12 @@ public class ViewDrawingColoring extends View {
         // MODE_PARALLEL initialize defaults for testing
         mParellelMode = PARALLEL_MODE.DEFAULT;
         mParallelPoints = new KPoint[10];
+
+        mVectorMap = new HashMap<>();
+        mVectorMap.put(mSymbolVectors[0], new ArrayList<KUnitVector>());
+        mVectorMap.put(mSymbolVectors[1], new ArrayList<KUnitVector>());
+        mVectorMap.put(mSymbolVectors[2], new ArrayList<KUnitVector>());
+        mVectorMap.put(mSymbolVectors[3], new ArrayList<KUnitVector>());
     }
 
     public void setGleaphHolder (GleaphHolder holder)  {
@@ -264,7 +293,8 @@ public class ViewDrawingColoring extends View {
         mParallelNumPoints = 0;
         mParallelRootReference = -1;
 
-        mAllVectors.clear();
+        List<KUnitVector> allVectors = mVectorMap.get(mCurrentSymbolVector);
+        allVectors.clear();
         mVectorPositions.clear();
     }
 
@@ -465,7 +495,8 @@ public class ViewDrawingColoring extends View {
             __lastStroke.setRadialMode(mRadialMode);
             __lastStroke.setVectorMode(mVectorMode);
             if (mVectorMode == VECTOR_MODE.VECTOR) {
-                __lastStroke.setVectors(mAllVectors);
+                List<KUnitVector> allVectors = mVectorMap.get(mCurrentSymbolVector);
+                __lastStroke.setVectors(allVectors);
             } else if (mVectorMode == VECTOR_MODE.JUST_TRANSLATE) {
                 __lastStroke.setPoints(Arrays.asList(mParallelPoints));
             }
@@ -617,10 +648,11 @@ public class ViewDrawingColoring extends View {
                     break;
 
                 case VECTOR:
-                    KUnitVector referenceVector = mAllVectors.get(0);
+                    List<KUnitVector> allVectors = mVectorMap.get(mCurrentSymbolVector);
+                    KUnitVector referenceVector = allVectors.get(0);
                     int angleXEnd, angleYEnd;
-                    for (int i = 0; i < mAllVectors.size(); i++) {
-                        KUnitVector localVector = mAllVectors.get(i);
+                    for (int i = 0; i < allVectors.size(); i++) {
+                        KUnitVector localVector = allVectors.get(i);
 
                         angleReverse = Math.toRadians(localVector.angle - referenceVector.angle) + angle;
                         angleXEnd = (int) (distance * Math.sin(angleReverse));
@@ -701,7 +733,8 @@ public class ViewDrawingColoring extends View {
             if (mCurrentVector.angle != null) {
 
                 mCurrentVector.angle = (int) Math.toDegrees(angle);
-                mAllVectors.add(mCurrentVector);
+                List<KUnitVector> allVectors = mVectorMap.get(mCurrentSymbolVector);
+                allVectors.add(mCurrentVector);
                 // mVectorPositions... wtf, should this have things in it???
             }
 
@@ -782,14 +815,15 @@ public class ViewDrawingColoring extends View {
             int angleXEnd, angleYEnd;
             mVectorPositions.clear();
 
-            for (int i=0; i < mAllVectors.size(); i++) {
+            List<KUnitVector> allVectors = mVectorMap.get(mCurrentSymbolVector);
+            for (int i=0; i < allVectors.size(); i++) {
 
-                int offsetX = mAllVectors.get(i).origin.x;
-                int offsetY = mAllVectors.get(i).origin.y;
+                int offsetX = allVectors.get(i).origin.x;
+                int offsetY = allVectors.get(i).origin.y;
 
                 // start drawing from the beginning, no matter what?
                 mVectorPositions.add(new KPoint(0, 0)); // this is kinda redundant lol
-                mVectorPositions.set(i, mAllVectors.get(i).origin);
+                mVectorPositions.set(i, allVectors.get(i).origin);
 
                 for (int j = 1; j < path.getSize(); j++) {
 
@@ -803,7 +837,7 @@ public class ViewDrawingColoring extends View {
                             lastPoint.x, lastPoint.y, nextPoint.x, nextPoint.y
                     );
 
-                    double angleReverse = Math.toRadians(mAllVectors.get(i).angle) + angle;
+                    double angleReverse = Math.toRadians(allVectors.get(i).angle) + angle;
                     angleXEnd = (int) (distance * Math.sin(angleReverse));
                     angleYEnd = (int) (distance * Math.cos(angleReverse));
 
